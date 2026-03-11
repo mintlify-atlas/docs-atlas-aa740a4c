@@ -1,0 +1,297 @@
+---
+title: 'Scan Options'
+description: 'Command-line flags and runtime options for AutoPentestX'
+icon: 'sliders'
+---
+
+# Scan Options
+
+AutoPentestX provides several command-line options to customize scan behavior and control which phases execute during a penetration test.
+
+## Basic Usage
+
+```bash
+python main.py -t <target> [OPTIONS]
+```
+
+## Required Arguments
+
+<ParamField path="-t, --target" type="string" required>
+  Target IP address or domain name to scan
+  
+  **Examples:**
+  - `192.168.1.100`
+  - `example.com`
+  - `10.0.0.1`
+</ParamField>
+
+## Optional Arguments
+
+### Tester Information
+
+<ParamField path="-n, --tester-name" type="string" default="AutoPentestX Team">
+  Name of the penetration tester to include in reports
+  
+  **Example:**
+  ```bash
+  python main.py -t 192.168.1.100 -n "John Doe"
+  ```
+</ParamField>
+
+### Safety Controls
+
+<ParamField path="--no-safe-mode" type="flag">
+  Disable safe mode to allow actual exploitation attempts
+  
+  <Warning>
+    Safe mode is enabled by default and HIGHLY RECOMMENDED. Disabling safe mode may cause damage to target systems. Only use on authorized test environments.
+  </Warning>
+  
+  **Default behavior:**
+  - Safe mode: **ENABLED** (exploitation is simulated only)
+  - With `--no-safe-mode`: Actual exploitation attempts may be performed
+  
+  **Example:**
+  ```bash
+  python main.py -t 192.168.1.100 --no-safe-mode
+  ```
+</ParamField>
+
+### Scan Phase Controls
+
+<ParamField path="--skip-web" type="flag">
+  Skip web vulnerability scanning (Nikto and SQLMap)
+  
+  Use this flag to save time when:
+  - Target has no web services
+  - Web scanning is not in scope
+  - Quick reconnaissance scan needed
+  
+  **What gets skipped:**
+  - Nikto web server scanner
+  - SQLMap SQL injection testing
+  - Web crawling and analysis
+  
+  **Example:**
+  ```bash
+  python main.py -t 192.168.1.100 --skip-web
+  ```
+</ParamField>
+
+<ParamField path="--skip-exploit" type="flag">
+  Skip exploitation assessment phase
+  
+  Use this flag when:
+  - Only reconnaissance and vulnerability assessment needed
+  - Client agreement prohibits exploitation attempts
+  - Time-constrained scanning
+  
+  **What gets skipped:**
+  - Exploit matching
+  - Metasploit integration
+  - Exploitation simulation
+  - RC script generation
+  
+  **Example:**
+  ```bash
+  python main.py -t 192.168.1.100 --skip-exploit
+  ```
+</ParamField>
+
+### Version Information
+
+<ParamField path="--version" type="flag">
+  Display AutoPentestX version and exit
+  
+  **Example:**
+  ```bash
+  python main.py --version
+  # Output: AutoPentestX v1.0
+  ```
+</ParamField>
+
+<ParamField path="-h, --help" type="flag">
+  Show help message with all available options and examples
+  
+  **Example:**
+  ```bash
+  python main.py --help
+  ```
+</ParamField>
+
+## Scan Phases
+
+AutoPentestX executes the following phases during a full assessment:
+
+### Phase 1: Database Initialization
+- Creates scan record in database
+- Assigns unique mission ID
+- Status: **ACTIVE**
+
+### Phase 2: Network Reconnaissance
+- Port scanning (TCP/UDP)
+- Service detection
+- OS fingerprinting
+- Version detection
+
+### Phase 3: Vulnerability Analysis
+- Nikto web server scanning (unless `--skip-web`)
+- SQLMap SQL injection testing (unless `--skip-web`)
+- Web crawling and analysis
+
+### Phase 4: CVE Intelligence
+- CVE lookup for detected services
+- CVSS scoring
+- Exploit availability check
+
+### Phase 5: Risk Assessment
+- CVSS threshold analysis
+- Risk score calculation
+- Severity classification
+- Overall risk level determination
+
+### Phase 6: Exploitation Assessment
+- Exploit matching (unless `--skip-exploit`)
+- Safe mode simulation by default
+- Metasploit resource script generation
+
+### Phase 7: Report Generation
+- PDF report creation
+- JSON data export
+- Database updates
+- Final summary display
+
+## Usage Examples
+
+<CodeGroup>
+```bash Basic Scan
+# Scan target with default settings (safe mode enabled)
+python main.py -t 192.168.1.100
+```
+
+```bash Custom Tester Name
+# Include your name in the report
+python main.py -t example.com -n "John Doe"
+```
+
+```bash Skip Web Scanning
+# Faster scan, skip web vulnerability checks
+python main.py -t 10.0.0.1 --skip-web
+```
+
+```bash Skip Exploitation
+# Reconnaissance and vulnerability assessment only
+python main.py -t 192.168.1.100 --skip-exploit
+```
+
+```bash Combined Options
+# Fast scan with custom tester name
+python main.py -t 192.168.1.100 -n "Security Team" --skip-web --skip-exploit
+```
+
+```bash Aggressive Scan (NOT RECOMMENDED)
+# Disable safe mode for actual exploitation
+# ⚠️ ONLY use on authorized test systems!
+python main.py -t 192.168.1.100 --no-safe-mode
+```
+</CodeGroup>
+
+## Authorization Requirements
+
+<Warning>
+  AutoPentestX requires explicit authorization before scanning any target.
+</Warning>
+
+When you run AutoPentestX, you will see a legal warning and authorization prompt:
+
+```
+⚠️  [LEGAL WARNING] - AUTHORIZATION REQUIRED ⚠️
+
+You are about to deploy an automated penetration testing tool.
+This weapon should ONLY be used on:
+  • Systems you own
+  • Systems with explicit written authorization
+
+Unauthorized system access = FEDERAL CRIME
+Punishment: Fines + Imprisonment
+
+By continuing, you confirm proper authorization to test.
+
+> Do you have authorization to test this target? (yes/no):
+```
+
+You must type `yes` or `y` to proceed with the scan.
+
+## Default Values Summary
+
+| Option | Default Value | Description |
+|--------|--------------|-------------|
+| `--target` | **Required** | Target IP or domain |
+| `--tester-name` | `AutoPentestX Team` | Tester name in reports |
+| Safe Mode | **Enabled** | Prevents actual exploitation |
+| Web Scanning | **Enabled** | Can disable with `--skip-web` |
+| Exploitation | **Enabled** | Can disable with `--skip-exploit` |
+
+## Configuration File
+
+<Note>
+  CLI flags override configuration file settings. For persistent configuration changes, edit `config.json`.
+</Note>
+
+See [Configuration Settings](/configuration/settings) for details on:
+- Scan timeouts
+- Port ranges
+- CVE API endpoints
+- Risk scoring thresholds
+- Output directories
+
+## Output Locations
+
+Scan results are stored in multiple locations:
+
+| Output Type | Default Location | Description |
+|-------------|-----------------|-------------|
+| PDF Reports | `reports/` | Generated penetration test reports |
+| Database | `database/autopentestx.db` | SQLite database with scan data |
+| Logs | `logs/` | Application logs and debug info |
+| Exploits | `exploits/` | Generated Metasploit RC scripts |
+
+## Performance Considerations
+
+### Scan Duration Factors
+
+1. **Number of open ports**: More services = longer scan time
+2. **Web vulnerability scanning**: Nikto and SQLMap can be time-intensive
+3. **Network latency**: Remote targets take longer than local networks
+4. **CVE lookup**: Dependent on API response times
+
+### Time-Saving Options
+
+```bash
+# Fastest scan (skip web and exploit phases)
+python main.py -t 192.168.1.100 --skip-web --skip-exploit
+
+# Typical scan time:
+# - Full scan: 10-30 minutes
+# - Skip web: 5-15 minutes
+# - Skip both: 2-8 minutes
+```
+
+## Error Handling
+
+AutoPentestX gracefully handles:
+
+- **Invalid targets**: DNS resolution failures
+- **Network errors**: Timeouts and connection issues
+- **Interrupted scans**: Ctrl+C saves partial results
+- **Permission errors**: Missing root/admin privileges
+
+<Note>
+  Interrupted scans are marked with status `interrupted` in the database and can be reviewed later.
+</Note>
+
+## Related Resources
+
+- [Configuration Settings](/configuration/settings) - Edit config.json defaults
+- [Database Configuration](/configuration/database) - View scan results in database
+- [Quick Start Guide](/getting-started/quick-start) - Run your first scan

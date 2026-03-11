@@ -1,97 +1,149 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "AutoPentestX"
+description: "Automated penetration testing and vulnerability assessment toolkit with comprehensive reporting"
 ---
 
-## Setting up
+<div style={{ backgroundColor: '#ffffff', padding: '3rem 0' }}>
+  <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
+    <h1 style={{ 
+      fontSize: '3rem', 
+      fontWeight: '700', 
+      marginBottom: '1.5rem',
+      color: '#1a1a1a',
+      fontFamily: 'Inter'
+    }}>
+      AutoPentestX
+    </h1>
+    <p style={{ 
+      fontSize: '1.25rem', 
+      marginBottom: '2rem',
+      color: '#545454',
+      maxWidth: '800px'
+    }}>
+      Automated penetration testing and vulnerability assessment toolkit with comprehensive reporting. 
+      Scan networks, identify vulnerabilities, assess risk, and generate professional PDF reports — all with a single command.
+    </p>
+    <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+      <a href="/quickstart" style={{
+        backgroundColor: '#94cb04',
+        color: '#1a1a1a',
+        padding: '0.75rem 1.5rem',
+        borderRadius: '6px',
+        textDecoration: 'none',
+        fontWeight: '600',
+        display: 'inline-block'
+      }}>
+        Get Started
+      </a>
+      <a href="https://github.com/Gowtham-Darkseid/AutoPentestX" style={{
+        backgroundColor: 'transparent',
+        color: '#1a1a1a',
+        padding: '0.75rem 1.5rem',
+        borderRadius: '6px',
+        textDecoration: 'none',
+        fontWeight: '600',
+        border: '1px solid #e0e0e0',
+        display: 'inline-block'
+      }}>
+        View on GitHub
+      </a>
+    </div>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+## Key Features
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+AutoPentestX provides a complete penetration testing workflow in a single tool.
 
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Network Scanning" icon="network-wired" href="/modules/scanner">
+    Automated port scanning, service detection, and OS fingerprinting with Nmap
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Vulnerability Assessment" icon="shield-exclamation" href="/modules/vulnerability-scanner">
+    Web vulnerability scanning with Nikto and SQL injection testing with SQLMap
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="CVE Intelligence" icon="database" href="/modules/cve-lookup">
+    Automated CVE database lookup with CVSS scoring and exploit matching
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Risk Analysis" icon="chart-line" href="/modules/risk-engine">
+    Multi-factor risk assessment engine with prioritized recommendations
   </Card>
-</Columns>
+  <Card title="Safe Exploitation" icon="bug" href="/modules/exploit-engine">
+    Metasploit integration with safe mode for authorized testing
+  </Card>
+  <Card title="PDF Reports" icon="file-pdf" href="/output/pdf-reports">
+    Professional vulnerability reports with executive summaries
+  </Card>
+</CardGroup>
 
-## Create beautiful pages
+## Quick Start
 
-Everything you need to create world-class documentation.
+Get started with AutoPentestX in three simple steps.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+<Steps>
+  <Step title="Install AutoPentestX">
+    Clone the repository and run the automated installer script.
+    
+    ```bash
+    git clone https://github.com/Gowtham-Darkseid/AutoPentestX.git
+    cd AutoPentestX
+    chmod +x install.sh
+    ./install.sh
+    ```
+  </Step>
+  
+  <Step title="Run your first scan">
+    Execute a basic scan against an authorized target.
+    
+    ```bash
+    ./autopentestx.sh 127.0.0.1
+    ```
+  </Step>
+  
+  <Step title="Review the report">
+    Check the generated PDF report and database for detailed findings.
+    
+    ```bash
+    ls reports/
+    ```
+  </Step>
+</Steps>
 
-## Need inspiration?
+## Use Cases
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<CardGroup cols={2}>
+  <Card title="Security Audits" icon="lock">
+    Conduct authorized vulnerability assessments for clients
+  </Card>
+  <Card title="Educational Labs" icon="graduation-cap">
+    Learn penetration testing in safe, controlled environments
+  </Card>
+  <Card title="CTF Competitions" icon="trophy">
+    Quick reconnaissance and vulnerability analysis
+  </Card>
+  <Card title="Bug Bounty" icon="bug-slash">
+    Automated scanning for authorized bug bounty programs
+  </Card>
+</CardGroup>
+
+## Documentation
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    System requirements and installation guide
+  </Card>
+  <Card title="Command Reference" icon="terminal" href="/commands/overview">
+    Complete CLI command documentation
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration/settings">
+    Customize scan settings and options
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/troubleshooting/common-issues">
+    Common issues and solutions
+  </Card>
+</CardGroup>
+
+<Warning>
+**Legal Notice**: AutoPentestX is designed for authorized penetration testing and educational purposes only. 
+You must have explicit written permission before scanning any target. Unauthorized access to computer systems is illegal.
+</Warning>

@@ -1,0 +1,517 @@
+---
+title: 'Log Files'
+description: 'Monitor scan execution and debug issues with detailed logging'
+icon: 'file-lines'
+---
+
+## Overview
+
+AutoPentestX generates detailed logs for every scan, capturing all operations, errors, and diagnostic information. Logs are essential for debugging, audit trails, and understanding scan behavior.
+
+## Log Locations
+
+All logs are stored in the `logs/` directory with timestamped filenames:
+
+```
+logs/
+└── autopentestx_20251130_143015.log
+```
+
+**Naming Convention**: `autopentestx_{YYYYMMDD}_{HHMMSS}.log`
+
+## Log Levels
+
+AutoPentestX uses standard logging levels to categorize messages:
+
+| Level | Symbol | Usage | Example |
+|-------|--------|-------|----------|
+| INFO | `[*]` | General information | `[*] Scanning all TCP ports...` |
+| SUCCESS | `[✓]` | Successful operations | `[✓] Port 80/tcp open - http` |
+| WARNING | `[!]` | Important notices | `[!] Metasploit not found` |
+| ERROR | `[✗]` | Operation failures | `[✗] Error connecting to target` |
+| DEBUG | `[DEBUG]` | Detailed diagnostics | `[DEBUG] Raw response: ...` |
+
+## Log Structure
+
+Logs follow a structured format with clear phase separation:
+
+```
+╔═══════════════════════════════════════════════╗
+║        AutoPentestX - Scan Execution         ║
+╚═══════════════════════════════════════════════╝
+
+[STEP 1] Initializing scan...
+[✓] Database connected: database/autopentestx.db
+[✓] Scan ID: 1
+
+[STEP 2] Network Scanning...
+============================================================
+AutoP entestX - Network Scanner
+============================================================
+Target: 192.168.1.100
+Scan started: 2025-11-30 14:30:15
+
+[*] Detecting operating system...
+[✓] OS Detected: Linux Ubuntu 20.04
+
+[STEP 3] Vulnerability Scanning...
+...
+```
+
+## Scan Phases in Logs
+
+<Accordion title="Phase 1: Initialization">
+  ```
+  [STEP 1] Initializing scan...
+  [✓] Database connected: database/autopentestx.db
+  [✓] Database tables created successfully
+  [✓] Scan ID: 1
+  ```
+  
+  Captures:
+  - Database connection status
+  - Table creation
+  - Scan ID assignment
+</Accordion>
+
+<Accordion title="Phase 2: Network Scanning">
+  ```
+  [STEP 2] Network Scanning...
+  [*] Detecting operating system for 192.168.1.100...
+  [✓] OS Detected: Linux Ubuntu 20.04 (Accuracy: 95%)
+  
+  [*] Scanning all TCP ports on 192.168.1.100...
+  [✓] Port 22/tcp open - ssh OpenSSH 8.2p1
+  [✓] Port 80/tcp open - http Apache httpd 2.4.41
+  [✓] Port scan completed in 45.23 seconds
+  [✓] Total open ports found: 5
+  ```
+  
+  Captures:
+  - OS detection results
+  - Port discovery progress
+  - Service enumeration
+  - Scan duration
+</Accordion>
+
+<Accordion title="Phase 3: Vulnerability Scanning">
+  ```
+  [STEP 3] Vulnerability Scanning...
+  [*] Checking for common vulnerabilities...
+  [!] Found: Outdated SSH Version on port 22
+  [!] Found: Outdated Apache Server on port 80
+  
+  [*] Running Nikto scan on http://192.168.1.100:80...
+  [✓] Nikto scan completed: 5 vulnerabilities found
+  
+  [*] Scanning for SQL injection...
+  [✓] SQL injection scan completed: 1 vulnerabilities found
+  ```
+  
+  Captures:
+  - Vulnerability detection
+  - Web scanner (Nikto) output
+  - SQL injection testing results
+</Accordion>
+
+<Accordion title="Phase 4: CVE Database Lookup">
+  ```
+  [STEP 4] CVE Database Lookup...
+  [*] Checking port 22: ssh OpenSSH 8.2p1
+  [*] Searching CVEs for: openssh 8.2p1
+  [✓] Found 3 relevant CVEs for openssh
+    [!] CVE-2021-41617 - CVSS: 7.0 (HIGH)
+    [!] CVE-2020-15778 - CVSS: 6.8 (MEDIUM)
+  ```
+  
+  Captures:
+  - CVE search queries
+  - Matched CVE identifiers
+  - CVSS scores and severity
+</Accordion>
+
+<Accordion title="Phase 5: Risk Assessment">
+  ```
+  [STEP 5] Risk Assessment...
+  [!] HIGH RISK: Port 80 - http (Score: 8.5/10)
+  [!] HIGH RISK: Port 443 - ssl/http (Score: 8.2/10)
+  [!] CRITICAL: SQL Injection vulnerabilities found: 1
+  
+  Overall Risk Level: HIGH
+  Total Risk Score: 42.3
+  ```
+  
+  Captures:
+  - Per-port risk scores
+  - Critical findings
+  - Overall risk calculation
+</Accordion>
+
+<Accordion title="Phase 6: Exploitation Assessment">
+  ```
+  [STEP 6] Exploitation Assessment (Safe Mode)...
+  [✓] Exploit matched: apache_mod_cgi_bash_env_exec for port 80
+  
+  [*] Running in SAFE MODE - No actual exploitation will occur
+  [*] Simulating exploit: exploit/multi/http/apache_mod_cgi_bash_env_exec
+  [✓] Metasploit RC script saved: exploits/exploit_192.168.1.100_80.rc
+  [*] Port 80: apache_mod_cgi_bash_env_exec - SIMULATED
+  ```
+  
+  Captures:
+  - Exploit matching results
+  - Safe mode confirmations
+  - RC script generation
+  - Simulation status
+</Accordion>
+
+<Accordion title="Phase 7: Report Generation">
+  ```
+  [STEP 7] Generating PDF Report...
+  [*] Adding cover page...
+  [*] Adding executive summary...
+  [*] Adding vulnerabilities...
+  [*] Building PDF document...
+  
+  ============================================================
+  PDF REPORT GENERATED SUCCESSFULLY
+  ============================================================
+  Report saved to: reports/AutoPentestX_Report_192_168_1_100.pdf
+  File size: 245.67 KB
+  ```
+  
+  Captures:
+  - PDF section generation
+  - File save location
+  - Report file size
+</Accordion>
+
+## Viewing Logs
+
+### Real-Time Monitoring
+
+<CodeGroup>
+```bash Standard Output
+python3 main.py -t 192.168.1.100
+# Logs displayed in terminal
+```
+
+```bash Follow Log File
+# In separate terminal
+tail -f logs/autopentestx_*.log
+```
+
+```bash Watch Latest
+watch -n 1 tail -20 logs/autopentestx_*.log
+```
+</CodeGroup>
+
+### Post-Scan Analysis
+
+```bash
+# View entire log
+cat logs/autopentestx_20251130_143015.log
+
+# View with pager
+less logs/autopentestx_20251130_143015.log
+
+# Search for errors
+grep "\[✗\]" logs/autopentestx_20251130_143015.log
+
+# Search for warnings
+grep "\[!\]" logs/autopentestx_20251130_143015.log
+```
+
+## Common Log Messages
+
+### Success Messages
+
+```
+[✓] Database connected: database/autopentestx.db
+[✓] OS Detected: Linux Ubuntu 20.04 (Accuracy: 95%)
+[✓] Port 80/tcp open - http Apache httpd 2.4.41
+[✓] Nikto scan completed: 5 vulnerabilities found
+[✓] PDF REPORT GENERATED SUCCESSFULLY
+```
+
+### Warning Messages
+
+```
+[!] Metasploit not found - Exploitation features limited
+[!] Found: Outdated SSH Version on port 22
+[!] HIGH RISK: Port 80 - http (Score: 8.5/10)
+[!] CRITICAL: SQL Injection vulnerabilities found: 1
+[!] Skipping potentially dangerous exploit: ms17_010_eternalblue
+```
+
+### Error Messages
+
+```
+[✗] Database connection error: unable to open database file
+[✗] Error connecting to target: Connection timed out
+[✗] Nikto scan failed: nikto command not found
+[✗] Error inserting vulnerability: constraint failed
+[✗] Error generating PDF report: Permission denied
+```
+
+## Debugging with Logs
+
+### Connection Issues
+
+Search for connection problems:
+
+```bash
+grep -i "connection\|timeout\|refused" logs/autopentestx_*.log
+```
+
+**Common patterns**:
+```
+[✗] Error connecting to target: Connection refused
+[✗] Nikto scan timeout after 300 seconds
+[!] Target may have firewall blocking scans
+```
+
+### Missing Dependencies
+
+Identify missing tools:
+
+```bash
+grep -i "not found\|not installed\|missing" logs/autopentestx_*.log
+```
+
+**Common patterns**:
+```
+[!] Metasploit not found - Exploitation features limited
+[✗] Nikto scan failed: nikto command not found
+[✗] nmap: command not found
+```
+
+### Database Errors
+
+Track database issues:
+
+```bash
+grep -i "database\|sqlite" logs/autopentestx_*.log
+```
+
+**Common patterns**:
+```
+[✗] Database connection error: unable to open database file
+[✗] Error inserting port: UNIQUE constraint failed
+[✗] Error updating scan: no such column: risk_score
+```
+
+### Performance Analysis
+
+Extract timing information:
+
+```bash
+grep -i "completed in\|duration\|seconds" logs/autopentestx_*.log
+```
+
+**Example output**:
+```
+[✓] Port scan completed in 45.23 seconds
+[✓] Scan Duration: 287.45 seconds (4.79 minutes)
+```
+
+## Log Rotation
+
+Logs accumulate over time. Implement rotation to manage disk space:
+
+### Manual Cleanup
+
+```bash
+# Delete logs older than 30 days
+find logs/ -name "autopentestx_*.log" -mtime +30 -delete
+
+# Archive old logs
+tar -czf logs_archive_$(date +%Y%m%d).tar.gz logs/*.log
+rm logs/*.log
+```
+
+### Automated Rotation Script
+
+```bash
+#!/bin/bash
+# log_rotate.sh
+
+LOG_DIR="logs"
+ARCHIVE_DIR="logs/archive"
+DAYS_TO_KEEP=30
+
+mkdir -p "$ARCHIVE_DIR"
+
+# Archive logs older than 30 days
+find "$LOG_DIR" -name "autopentestx_*.log" -mtime +$DAYS_TO_KEEP \
+  -exec mv {} "$ARCHIVE_DIR/" \;
+
+# Compress archived logs
+find "$ARCHIVE_DIR" -name "*.log" -exec gzip {} \;
+
+echo "Log rotation completed"
+```
+
+<Note>
+Consider setting up a cron job to run log rotation weekly or monthly depending on scan frequency.
+</Note>
+
+## Log Analysis Tools
+
+### Extract Scan Summary
+
+```bash
+#!/bin/bash
+# extract_summary.sh
+
+LOG_FILE=$1
+
+echo "=== Scan Summary ==="
+grep "Target:" "$LOG_FILE" | head -1
+grep "Scan ID:" "$LOG_FILE" | head -1
+grep "Overall Risk Level:" "$LOG_FILE"
+grep "Total Vulnerabilities:" "$LOG_FILE"
+grep "Duration:" "$LOG_FILE"
+echo "==================="
+```
+
+**Usage**:
+```bash
+./extract_summary.sh logs/autopentestx_20251130_143015.log
+```
+
+### Count Vulnerabilities
+
+```bash
+# Count vulnerability severity
+grep -o "CVSS: [0-9.]*" logs/autopentestx_*.log | \
+  awk '{print $2}' | \
+  awk '{if($1>=9)print "CRITICAL"; \
+        else if($1>=7)print "HIGH"; \
+        else if($1>=4)print "MEDIUM"; \
+        else print "LOW"}' | \
+  sort | uniq -c
+```
+
+### Generate Activity Report
+
+```bash
+# List all scans with timestamps
+grep "Scan started:" logs/autopentestx_*.log | \
+  awk -F: '{print $1 " - " $4":"$5":"$6}'
+```
+
+## Best Practices
+
+1. **Review Logs After Each Scan**: Check for errors or warnings
+2. **Archive Important Scans**: Save logs for compliance/audit purposes
+3. **Monitor Disk Space**: Logs can grow large over time
+4. **Use Log Levels**: Pay attention to `[✗]` and `[!]` symbols
+5. **Correlate with Database**: Use Scan ID to match logs with database entries
+
+## Troubleshooting Common Issues
+
+<Accordion title="No logs being generated">
+  **Possible causes**:
+  - Logs directory doesn't exist
+  - Insufficient permissions
+  
+  **Solution**:
+  ```bash
+  mkdir -p logs
+  chmod 755 logs
+  ```
+</Accordion>
+
+<Accordion title="Logs show permission denied errors">
+  **Cause**: Insufficient file system permissions
+  
+  **Solution**:
+  ```bash
+  # Check permissions
+  ls -la logs/ reports/ database/
+  
+  # Fix permissions
+  chmod -R 755 logs reports database
+  ```
+</Accordion>
+
+<Accordion title="Cannot find specific log file">
+  **Cause**: Timestamp mismatch or incorrect directory
+  
+  **Solution**:
+  ```bash
+  # List all logs sorted by date
+  ls -lt logs/
+  
+  # Find logs by scan target
+  grep -l "192.168.1.100" logs/*.log
+  ```
+</Accordion>
+
+<Accordion title="Logs consuming too much disk space">
+  **Cause**: Long-running scans or no log rotation
+  
+  **Solution**:
+  ```bash
+  # Check disk usage
+  du -sh logs/
+  
+  # Compress old logs
+  gzip logs/*.log
+  
+  # Implement log rotation (see above)
+  ```
+</Accordion>
+
+## Integration with External Tools
+
+### Send to Syslog
+
+```bash
+logger -f logs/autopentestx_20251130_143015.log -t autopentestx
+```
+
+### Parse with Python
+
+```python
+import re
+from datetime import datetime
+
+def parse_log(log_file):
+    with open(log_file, 'r') as f:
+        for line in f:
+            if '[✗]' in line:
+                print(f"Error: {line.strip()}")
+            elif 'CRITICAL' in line or 'HIGH' in line:
+                print(f"Alert: {line.strip()}")
+
+parse_log('logs/autopentestx_20251130_143015.log')
+```
+
+### Export to JSON
+
+```python
+import json
+import re
+
+def extract_structured_data(log_file):
+    data = {'errors': [], 'warnings': [], 'vulnerabilities': []}
+    
+    with open(log_file, 'r') as f:
+        for line in f:
+            if '[✗]' in line:
+                data['errors'].append(line.strip())
+            elif '[!]' in line and 'CVE' in line:
+                data['vulnerabilities'].append(line.strip())
+    
+    return json.dumps(data, indent=2)
+
+print(extract_structured_data('logs/autopentestx_20251130_143015.log'))
+```
+
+## Related Resources
+
+- [PDF Reports](/output/pdf-reports) - Understand report generation logs
+- [Database Queries](/output/database-queries) - Correlate logs with database entries
+- [Troubleshooting](/troubleshooting) - Common error solutions

@@ -1,0 +1,444 @@
+---
+title: CLI Options
+description: Complete reference for all AutoPentestX command-line flags and options
+icon: sliders
+---
+
+AutoPentestX provides several command-line options to customize the penetration testing process. This page documents every available flag with defaults and usage examples.
+
+## Required Arguments
+
+### Target Specification
+
+<ParamField path="-t, --target" type="string" required>
+  Target IP address or domain name to perform penetration testing against
+  
+  **Format:** IPv4 address or fully qualified domain name (FQDN)
+  
+  **Examples:**
+  ```bash
+  python3 main.py -t 192.168.1.100
+  python3 main.py --target example.com
+  ```
+</ParamField>
+
+## Optional Arguments
+
+### Tester Name
+
+<ParamField path="-n, --tester-name" type="string" default="AutoPentestX Team">
+  Name of the penetration tester to include in generated reports
+  
+  This value appears in:
+  - PDF report headers
+  - Database scan records
+  - Executive summaries
+  
+  **Examples:**
+  ```bash
+  python3 main.py -t 192.168.1.100 -n "John Doe"
+  python3 main.py -t 192.168.1.100 --tester-name "Security Team"
+  ```
+</ParamField>
+
+<Accordion title="Report Branding Example">
+
+With custom tester name:
+```bash
+python3 main.py -t 192.168.1.100 -n "Red Team - Q1 2026"
+```
+
+PDF Report Output:
+```
+╔══════════════════════════════════════════════════╗
+║     SECURITY PENETRATION TEST REPORT             ║
+║                                                  ║
+║  Performed by: Red Team - Q1 2026               ║
+║  Target: 192.168.1.100                          ║
+║  Date: March 11, 2026                           ║
+╚══════════════════════════════════════════════════╝
+```
+
+</Accordion>
+
+### Safe Mode Control
+
+<ParamField path="--no-safe-mode" type="boolean" default="false">
+  Disable safe mode protections (NOT RECOMMENDED)
+  
+  **Default Behavior:** Safe mode is **ENABLED** by default
+  
+  **Safe Mode Protections:**
+  - Confirmation prompt before scanning
+  - Rate limiting on aggressive scans
+  - Prevents accidental destructive operations
+  - Legal warning displays
+  
+  **Usage:**
+  ```bash
+  # Disable safe mode (dangerous)
+  python3 main.py -t 192.168.1.100 --no-safe-mode
+  ```
+</ParamField>
+
+<Warning>
+**Use `--no-safe-mode` with extreme caution!**
+
+Disabling safe mode:
+- Removes confirmation prompts
+- Increases risk of unauthorized scanning
+- May violate compliance requirements
+- Could lead to legal issues
+
+**Only disable safe mode when:**
+- Running in fully automated CI/CD pipelines
+- Testing in isolated lab environments
+- You have comprehensive authorization
+</Warning>
+
+### Web Scanning Control
+
+<ParamField path="--skip-web" type="boolean" default="false">
+  Skip web vulnerability scanning modules (Nikto and SQLMap)
+  
+  **Skipped Modules:**
+  - Nikto web server scanner
+  - SQLMap SQL injection testing
+  - Web application fingerprinting
+  - CMS vulnerability detection
+  
+  **Use Cases:**
+  - Target has no web services
+  - Time-constrained assessments
+  - Network infrastructure focus
+  - Web testing handled separately
+  
+  **Usage:**
+  ```bash
+  python3 main.py -t 192.168.1.100 --skip-web
+  ```
+  
+  **Time Savings:** 5-10 minutes per scan
+</ParamField>
+
+<Tip>
+**When to use `--skip-web`:**
+
+✅ **Good scenarios:**
+- Network devices (routers, switches, firewalls)
+- Database servers without web interfaces
+- Quick reconnaissance sweeps
+- IoT devices without HTTP services
+
+❌ **Avoid when:**
+- Target runs web applications
+- Testing web servers or APIs
+- Comprehensive assessments required
+- Unknown service landscape
+</Tip>
+
+### Exploitation Control
+
+<ParamField path="--skip-exploit" type="boolean" default="false">
+  Skip exploitation assessment and Metasploit RC script generation
+  
+  **Skipped Functionality:**
+  - CVE exploitability analysis
+  - Metasploit module matching
+  - RC script generation for manual exploitation
+  - Risk-based exploit prioritization
+  
+  **Use Cases:**
+  - Read-only security assessments
+  - Compliance scans
+  - Initial reconnaissance
+  - Vulnerability enumeration only
+  
+  **Usage:**
+  ```bash
+  python3 main.py -t 192.168.1.100 --skip-exploit
+  ```
+  
+  **Time Savings:** 2-5 minutes per scan
+</ParamField>
+
+<Note>
+**Important:** Even with `--skip-exploit`, AutoPentestX still:
+- Performs CVE lookups
+- Calculates risk scores
+- Identifies vulnerabilities
+- Generates comprehensive reports
+
+Only the **exploitation assessment** phase is skipped.
+</Note>
+
+### Version Information
+
+<ParamField path="--version" type="boolean">
+  Display AutoPentestX version number and exit
+  
+  **Usage:**
+  ```bash
+  python3 main.py --version
+  ```
+  
+  **Output:**
+  ```
+  AutoPentestX v1.0
+  ```
+</ParamField>
+
+### Help Display
+
+<ParamField path="-h, --help" type="boolean">
+  Show help message with all available options and exit
+  
+  **Usage:**
+  ```bash
+  python3 main.py --help
+  python3 main.py -h
+  ```
+</ParamField>
+
+## Option Combinations
+
+### Speed-Optimized Scanning
+
+<CodeGroup>
+
+```bash Lightning Fast (5-10 min)
+python3 main.py -t 192.168.1.100 --skip-web --skip-exploit
+```
+
+```bash Balanced Speed (10-20 min)
+python3 main.py -t 192.168.1.100 --skip-exploit
+```
+
+```bash Full Assessment (20-30 min)
+python3 main.py -t 192.168.1.100
+```
+
+</CodeGroup>
+
+### Customized Testing Scenarios
+
+<Tabs>
+
+<Tab title="Network Device">
+```bash
+# Router/Switch/Firewall Assessment
+python3 main.py -t 192.168.1.1 \
+  --skip-web \
+  --skip-exploit \
+  -n "Network Security Audit"
+```
+
+**Rationale:**
+- Network devices rarely run web applications
+- Exploitation may disrupt network operations
+- Focus on configuration and service hardening
+</Tab>
+
+<Tab title="Web Server">
+```bash
+# Complete Web Application Testing
+python3 main.py -t web.example.com \
+  -n "Application Security Team"
+```
+
+**Rationale:**
+- Includes Nikto and SQLMap scanning
+- Full exploitation assessment
+- Comprehensive web vulnerability detection
+</Tab>
+
+<Tab title="Database Server">
+```bash
+# Database Security Assessment
+python3 main.py -t 192.168.1.50 \
+  --skip-web \
+  -n "Database Security Audit"
+```
+
+**Rationale:**
+- Skip web modules (no HTTP services)
+- Include exploitation for privilege escalation
+- Focus on network service vulnerabilities
+</Tab>
+
+<Tab title="Compliance Scan">
+```bash
+# Read-Only Vulnerability Assessment
+python3 main.py -t 192.168.1.100 \
+  --skip-exploit \
+  -n "Quarterly Compliance Scan"
+```
+
+**Rationale:**
+- No exploitation attempts (compliance requirement)
+- Full vulnerability detection
+- Safe for production environments
+</Tab>
+
+</Tabs>
+
+## Advanced Usage Patterns
+
+### Automated Scanning
+
+```bash
+#!/bin/bash
+# Automated scanning script for multiple targets
+
+TARGETS=("192.168.1.100" "192.168.1.101" "192.168.1.102")
+TESTER="Automated Security Scanner"
+
+for target in "${TARGETS[@]}"; do
+  echo "[*] Scanning $target..."
+  python3 main.py -t "$target" \
+    -n "$TESTER" \
+    --no-safe-mode \
+    --skip-exploit
+  
+  echo "[✓] Completed: $target"
+  echo "-----------------------------------"
+done
+
+echo "[✓] All scans complete. Check reports/ directory."
+```
+
+<Warning>
+**Automation Considerations:**
+- Use `--no-safe-mode` to bypass interactive prompts
+- Implement proper authorization checks
+- Add logging and error handling
+- Consider rate limiting between scans
+- Ensure sufficient disk space for reports
+</Warning>
+
+### CI/CD Integration
+
+```yaml
+# GitLab CI Example
+security_scan:
+  stage: test
+  image: python:3.10
+  script:
+    - cd AutoPentestX
+    - ./install.sh
+    - source venv/bin/activate
+    - python3 main.py -t staging.example.com \
+        --no-safe-mode \
+        --skip-exploit \
+        -n "CI/CD Security Pipeline"
+  artifacts:
+    paths:
+      - reports/*.pdf
+      - database/autopentestx.db
+    expire_in: 30 days
+  only:
+    - develop
+    - main
+```
+
+### Wrapper Script with Options
+
+The `autopentestx.sh` wrapper script accepts the same options:
+
+```bash
+# Using wrapper script
+./autopentestx.sh 192.168.1.100 --skip-web -n "Security Team"
+
+# Equivalent Python command
+python3 main.py -t 192.168.1.100 --skip-web -n "Security Team"
+```
+
+**Wrapper Script Benefits:**
+- Automatic virtual environment handling
+- Enhanced logging to `logs/` directory
+- Legal warning display
+- Exit code handling
+- Timestamped log files
+
+## Option Summary Table
+
+| Flag | Short | Type | Default | Required | Description |
+|------|-------|------|---------|----------|-------------|
+| `--target` | `-t` | string | - | ✅ Yes | Target IP or domain |
+| `--tester-name` | `-n` | string | `AutoPentestX Team` | ❌ No | Tester name for reports |
+| `--no-safe-mode` | - | boolean | `false` | ❌ No | Disable safety checks |
+| `--skip-web` | - | boolean | `false` | ❌ No | Skip Nikto/SQLMap |
+| `--skip-exploit` | - | boolean | `false` | ❌ No | Skip exploitation |
+| `--version` | - | boolean | - | ❌ No | Show version |
+| `--help` | `-h` | boolean | - | ❌ No | Show help message |
+
+## Environment Variables
+
+AutoPentestX does not currently support environment variable configuration. All options must be specified via command-line flags.
+
+<Tip>
+**Feature Request:** If you need environment variable support for CI/CD integration, please open an issue on the GitHub repository.
+</Tip>
+
+## Error Handling
+
+### Missing Required Argument
+
+```bash
+python3 main.py
+```
+
+**Error:**
+```
+usage: main.py [-h] -t TARGET [-n TESTER_NAME] [--no-safe-mode]
+               [--skip-web] [--skip-exploit] [--version]
+main.py: error: the following arguments are required: -t/--target
+```
+
+### Invalid Option
+
+```bash
+python3 main.py -t 192.168.1.100 --invalid-flag
+```
+
+**Error:**
+```
+main.py: error: unrecognized arguments: --invalid-flag
+```
+
+### Conflicting Options
+
+There are no conflicting options in AutoPentestX. All flags can be combined freely.
+
+## Best Practices
+
+<Check>
+- [ ] Always use `-n` flag for audit trail documentation
+- [ ] Start with `--skip-exploit` in production environments
+- [ ] Use `--skip-web` for non-HTTP services
+- [ ] Keep safe mode enabled unless automating
+- [ ] Review `--help` output before complex scans
+- [ ] Document authorization for each target
+</Check>
+
+## Related Topics
+
+<CardGroup cols={2}>
+
+<Card title="Examples" icon="code" href="/commands/examples">
+Real-world command examples
+</Card>
+
+<Card title="Target Specification" icon="bullseye" href="/commands/target">
+How to specify scan targets
+</Card>
+
+<Card title="Safe Mode" icon="shield" href="/features/safe-mode">
+Understand safety mechanisms
+</Card>
+
+<Card title="Automation" icon="robot" href="/advanced/automation">
+CI/CD and scripting integration
+</Card>
+
+</CardGroup>

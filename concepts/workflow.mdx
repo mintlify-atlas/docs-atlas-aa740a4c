@@ -1,0 +1,515 @@
+---
+title: '7-Phase Workflow'
+description: 'Complete penetration testing workflow from reconnaissance to reporting'
+icon: 'diagram-project'
+---
+
+AutoPentestX executes a comprehensive 7-phase penetration testing workflow automatically. Each phase builds on the previous one, creating a complete picture of the target's security posture.
+
+## Complete Workflow Overview
+
+The `run_full_assessment()` method in `main.py:136` orchestrates all seven phases:
+
+```python
+def run_full_assessment(self):
+    """Execute complete penetration testing workflow"""
+    self.start_time = time.time()
+    
+    # Phase 1: Database initialization
+    # Phase 2: Network scanning  
+    # Phase 3: Vulnerability detection
+    # Phase 4: CVE intelligence
+    # Phase 5: Risk assessment
+    # Phase 6: Exploitation simulation
+    # Phase 7: Report generation
+```
+
+## Phase 1: Initialization
+
+### Database Setup
+
+The assessment begins with database initialization (`main.py:144-159`):
+
+```python
+print(f"[PHASE 1] Initializing attack sequence...")
+self.scan_id = self.db.insert_scan(self.target)
+if not self.scan_id:
+    print(f"[✗] CRITICAL ERROR: Database initialization failed")
+    return False
+print(f"[✓] Mission ID: {self.scan_id} | Status: ACTIVE")
+```
+
+<Steps>
+  <Step title="Create Scan Record">
+    Generates unique scan ID and creates database entry with timestamp
+  </Step>
+  
+  <Step title="Verify Database">
+    Ensures SQLite connection is active and tables exist
+  </Step>
+  
+  <Step title="Initialize Storage">
+    Prepares directories for reports, logs, and exploit scripts
+  </Step>
+</Steps>
+
+<Info>
+The scan ID tracks all results throughout the assessment and allows historical comparison of scans against the same target.
+</Info>
+
+## Phase 2: Network Reconnaissance
+
+### Port Scanning & Service Detection
+
+Comprehensive network scanning using Nmap (`main.py:161-180`):
+
+```python
+print(f"[PHASE 2] Network reconnaissance in progress...")
+scanner = Scanner(self.target)
+self.scan_results = scanner.run_full_scan()
+
+if not self.scan_results:
+    print(f"[✗] ABORT: Network reconnaissance failed")
+    return False
+print(f"[✓] Phase 2 complete - {len(self.scan_results.get('ports', []))} ports discovered")
+```
+
+### Scanning Capabilities
+
+<CardGroup cols={2}>
+  <Card title="TCP Scanning" icon="network-wired">
+    All 65,535 TCP ports with service detection
+  </Card>
+  
+  <Card title="UDP Scanning" icon="tower-broadcast">
+    Top 20 UDP ports for common services
+  </Card>
+  
+  <Card title="OS Detection" icon="computer">
+    Operating system fingerprinting via TCP/IP stack analysis
+  </Card>
+  
+  <Card title="Banner Grabbing" icon="tag">
+    Service version identification from banners
+  </Card>
+</CardGroup>
+
+### Data Collected
+
+- Open port numbers
+- Service names (HTTP, SSH, FTP, etc.)
+- Service versions (Apache 2.4.41, OpenSSH 8.2p1)
+- Operating system family and version
+- Network latency and responsiveness
+
+### Database Storage
+
+```python
+# Update database with OS detection
+self.db.update_scan(self.scan_id, 
+                  os_detection=self.scan_results.get('os_detection', 'Unknown'))
+
+# Store each discovered port
+for port in self.scan_results.get('ports', []):
+    self.db.insert_port(self.scan_id, port)
+```
+
+## Phase 3: Vulnerability Analysis
+
+### Web Vulnerability Scanning
+
+Deep vulnerability analysis using Nikto and SQLMap (`main.py:183-207`):
+
+```python
+if not self.skip_web:
+    print(f"[PHASE 3] Vulnerability analysis initiated...")
+    vuln_scanner = VulnerabilityScanner(
+        self.target, 
+        self.scan_results.get('ports', [])
+    )
+    self.vuln_results = vuln_scanner.run_full_scan()
+```
+
+<Note>
+This phase can be skipped with `--skip-web` for faster scans or when web testing isn't needed.
+</Note>
+
+### Detection Methods
+
+<Steps>
+  <Step title="Common Vulnerabilities">
+    Checks for default credentials, outdated software, misconfigurations
+  </Step>
+  
+  <Step title="Web Application Scanning">
+    Nikto scans for web server vulnerabilities, dangerous files, outdated versions
+  </Step>
+  
+  <Step title="SQL Injection Testing">
+    SQLMap tests for SQL injection points in web applications
+  </Step>
+  
+  <Step title="Service-Specific Checks">
+    Custom checks for FTP, SSH, SMB, and other common services
+  </Step>
+</Steps>
+
+### Vulnerability Storage
+
+```python
+# Store vulnerabilities in database
+for vuln in self.vuln_results.get('vulnerabilities', []):
+    self.db.insert_vulnerability(self.scan_id, vuln)
+
+# Store web-specific vulnerabilities  
+for web_vuln in self.vuln_results.get('web_vulnerabilities', []):
+    self.db.insert_web_vulnerability(self.scan_id, web_vuln)
+```
+
+## Phase 4: CVE Intelligence
+
+### Automated CVE Lookup
+
+Cross-references discovered services with CVE databases (`main.py:209-230`):
+
+```python
+print(f"[PHASE 4] Accessing CVE intelligence database...")
+cve_lookup = CVELookup()
+services = self.scan_results.get('services', [])
+self.cve_results = cve_lookup.lookup_services(services)
+```
+
+### CVE Matching Process
+
+<Steps>
+  <Step title="Service Identification">
+    Extracts service name and version from scan results
+  </Step>
+  
+  <Step title="Database Query">
+    Queries CVE databases (NVD, CVE Details) for matching vulnerabilities
+  </Step>
+  
+  <Step title="CVSS Scoring">
+    Retrieves CVSS scores and severity ratings for each CVE
+  </Step>
+  
+  <Step title="Exploit Availability">
+    Checks if public exploits exist for identified CVEs
+  </Step>
+</Steps>
+
+### CVE Data Structure
+
+```python
+for cve in self.cve_results:
+    vuln_data = {
+        'port': cve.get('port'),
+        'service': cve.get('service'),
+        'name': cve.get('cve_id'),
+        'description': cve.get('description'),
+        'cve_id': cve.get('cve_id'),
+        'cvss_score': cve.get('cvss_score'),
+        'risk_level': cve.get('risk_level'),
+        'exploitable': cve.get('exploitable', False)
+    }
+    self.db.insert_vulnerability(self.scan_id, vuln_data)
+```
+
+<Warning>
+High CVSS scores (7.0+) indicate critical vulnerabilities that require immediate attention.
+</Warning>
+
+## Phase 5: Risk Assessment
+
+### Multi-Factor Risk Calculation
+
+Comprehensive risk analysis combining all vulnerability data (`main.py:233-254`):
+
+```python
+print(f"[PHASE 5] Computing threat matrix...")
+risk_engine = RiskEngine()
+self.risk_results = risk_engine.calculate_overall_risk(
+    self.scan_results,
+    self.vuln_results.get('vulnerabilities', []),
+    self.cve_results,
+    self.vuln_results.get('web_vulnerabilities', []),
+    self.vuln_results.get('sql_vulnerabilities', [])
+)
+```
+
+### Risk Factors
+
+<CardGroup cols={2}>
+  <Card title="Port Exposure" icon="door-open">
+    Number and type of open ports (higher = riskier)
+  </Card>
+  
+  <Card title="Vulnerability Count" icon="exclamation-triangle">
+    Total vulnerabilities weighted by severity
+  </Card>
+  
+  <Card title="CVSS Scores" icon="chart-line">
+    Aggregate CVSS scores from all CVEs
+  </Card>
+  
+  <Card title="Exploit Availability" icon="bomb">
+    Whether public exploits exist for vulnerabilities
+  </Card>
+</CardGroup>
+
+### Risk Levels
+
+- **CRITICAL**: CVSS 9.0-10.0 or actively exploited vulnerabilities
+- **HIGH**: CVSS 7.0-8.9 or multiple serious issues
+- **MEDIUM**: CVSS 4.0-6.9 or configuration weaknesses  
+- **LOW**: CVSS 0.1-3.9 or informational findings
+- **INFO**: No security impact, awareness only
+
+### Database Update
+
+```python
+self.db.update_scan(
+    self.scan_id,
+    total_ports=len(self.scan_results.get('ports', [])),
+    open_ports=len(self.scan_results.get('ports', [])),
+    vulnerabilities_found=self.risk_results.get('total_vulnerabilities', 0),
+    risk_score=self.risk_results.get('overall_risk_level', 'UNKNOWN'),
+    status='completed'
+)
+```
+
+## Phase 6: Exploitation Simulation
+
+### Safe Mode Exploitation
+
+Metasploit integration with safety controls (`main.py:256-290`):
+
+```python
+if not self.skip_exploit:
+    print(f"[PHASE 6] Exploit simulation [SAFE MODE]...")
+    exploit_engine = ExploitEngine(safe_mode=self.safe_mode)
+    
+    # Match exploits to vulnerabilities
+    matched_exploits = exploit_engine.match_exploits(
+        self.vuln_results.get('vulnerabilities', []),
+        self.cve_results
+    )
+    
+    # Simulate exploitation
+    if matched_exploits:
+        self.exploit_results = exploit_engine.simulate_exploitation(
+            matched_exploits, 
+            self.target
+        )
+```
+
+<Note>
+Phase 6 can be skipped with `--skip-exploit` for compliance requirements or faster assessments.
+</Note>
+
+### Exploit Matching
+
+The exploit engine matches vulnerabilities to known exploits (`exploit_engine.py:70-117`):
+
+```python
+def match_exploits(self, vulnerabilities, cves):
+    matched_exploits = []
+    
+    # Match based on service versions
+    for vuln in vulnerabilities:
+        service = vuln.get('service', '').lower()
+        version = vuln.get('version', '').lower()
+        
+        for key, exploit in self.exploit_db.items():
+            if key.lower() in f"{service} {version}":
+                matched_exploits.append({
+                    'vulnerability': vuln,
+                    'exploit': exploit,
+                    'confidence': 'HIGH'
+                })
+```
+
+### Exploit Database
+
+Built-in exploit mappings (`exploit_engine.py:22-53`):
+
+- **vsftpd 2.3.4**: Backdoor command execution
+- **ProFTPD 1.3.3c**: Backdoor vulnerability
+- **EternalBlue (MS17-010)**: SMB remote code execution
+- **Shellshock**: Bash environment variable injection
+- **Drupalgeddon2**: Drupal RCE vulnerability
+
+### Safe Mode Behavior
+
+In safe mode (default), the tool:
+
+<Steps>
+  <Step title="Identifies Exploits">
+    Matches vulnerabilities to Metasploit modules
+  </Step>
+  
+  <Step title="Simulates Execution">
+    Logs what would happen without actually executing
+  </Step>
+  
+  <Step title="Generates RC Scripts">
+    Creates Metasploit resource scripts for manual testing
+  </Step>
+  
+  <Step title="Records Results">
+    Stores simulation results in database
+  </Step>
+</Steps>
+
+```python
+if self.safe_mode:
+    print("[*] Running in SAFE MODE - No actual exploitation will occur")
+    result = {
+        'status': 'SIMULATED',
+        'safe_mode': True,
+        'result': 'Exploit would be executed in non-safe mode'
+    }
+```
+
+<Warning>
+Disabling safe mode with `--no-safe-mode` can cause system damage or instability. Only disable for authorized testing in isolated environments.
+</Warning>
+
+## Phase 7: Report Generation
+
+### Professional PDF Reports
+
+Final phase generates comprehensive documentation (`main.py:293-310`):
+
+```python
+print(f"[PHASE 7] Compiling classified intelligence report...")
+pdf_generator = PDFReportGenerator(self.target, self.scan_id)
+report_file = pdf_generator.generate_report(
+    self.scan_results,
+    self.vuln_results.get('vulnerabilities', []),
+    self.cve_results,
+    self.vuln_results.get('web_vulnerabilities', []),
+    self.vuln_results.get('sql_vulnerabilities', []),
+    self.risk_results,
+    self.exploit_results,
+    self.tester_name
+)
+```
+
+### Report Contents
+
+<Accordion title="Executive Summary">
+  High-level overview suitable for non-technical stakeholders:
+  - Overall risk level and score
+  - Critical findings count
+  - Top 5 recommendations
+  - Business impact assessment
+</Accordion>
+
+<Accordion title="Technical Findings">
+  Detailed technical information for security teams:
+  - Complete port scan results
+  - All identified vulnerabilities
+  - CVE details with CVSS scores
+  - Exploit simulation results
+</Accordion>
+
+<Accordion title="Risk Assessment">
+  Comprehensive risk analysis:
+  - Risk calculation methodology
+  - Individual vulnerability ratings
+  - Aggregate risk scoring
+  - Threat prioritization
+</Accordion>
+
+<Accordion title="Remediation Guidance">
+  Actionable recommendations:
+  - Prioritized fix list
+  - Configuration changes
+  - Patch requirements
+  - Compensating controls
+</Accordion>
+
+### Report Formats
+
+- **PDF**: Primary format with professional styling
+- **Database**: SQLite for historical analysis
+- **Logs**: Text logs for debugging and audit trails
+- **RC Scripts**: Metasploit scripts for validation testing
+
+## Workflow Execution
+
+### Automatic Progress
+
+All phases execute automatically with real-time progress indicators:
+
+```bash
+╔══════════════════════════════════════════════════════════════════╗
+║ [PHASE 1] ▶ Initializing attack sequence...                    ║
+╚══════════════════════════════════════════════════════════════════╝
+[✓] Mission ID: 12345 | Status: ACTIVE
+
+╔══════════════════════════════════════════════════════════════════╗
+║ [PHASE 2] ▶ Network reconnaissance in progress...             ║
+╚══════════════════════════════════════════════════════════════════╝
+[✓] Phase 2 complete - 15 ports discovered
+```
+
+### Error Handling
+
+The workflow includes comprehensive error handling (`main.py:324-341`):
+
+```python
+except KeyboardInterrupt:
+    print(f"[!] MISSION ABORT - Operator initiated shutdown")
+    if self.scan_id:
+        self.db.update_scan(self.scan_id, status='interrupted')
+    return False
+
+except Exception as e:
+    print(f"[✗] CRITICAL SYSTEM ERROR: {e}")
+    if self.scan_id:
+        self.db.update_scan(self.scan_id, status='failed')
+    return False
+```
+
+<Info>
+All partial results are saved even if the scan is interrupted, allowing you to review findings up to the failure point.
+</Info>
+
+## Timeline & Performance
+
+### Typical Execution Times
+
+| Phase | Time Range | Factors |
+|-------|------------|--------|
+| Phase 1 | < 1 second | Database initialization |
+| Phase 2 | 3-15 minutes | Number of ports, network latency |
+| Phase 3 | 5-20 minutes | Number of web services, SQLMap depth |
+| Phase 4 | 1-3 minutes | CVE API response times |
+| Phase 5 | < 1 second | Risk calculation |
+| Phase 6 | 1-5 minutes | Number of matched exploits |
+| Phase 7 | 1-2 minutes | Report complexity |
+
+**Total**: Typically 10-30 minutes for a complete assessment
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Safe Mode Details" icon="shield-check" href="/concepts/safe-mode">
+    Learn about exploitation safety mechanisms
+  </Card>
+  
+  <Card title="Run Your First Scan" icon="play" href="/usage/basic-scan">
+    Execute your first penetration test
+  </Card>
+  
+  <Card title="CLI Reference" icon="terminal" href="/usage/cli-reference">
+    Complete command-line options
+  </Card>
+  
+  <Card title="Understanding Reports" icon="file-pdf" href="/usage/reports">
+    Interpret generated PDF reports
+  </Card>
+</CardGroup>

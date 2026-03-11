@@ -1,0 +1,504 @@
+---
+title: 'Safe Mode'
+description: 'Understanding exploitation safety controls and risk mitigation'
+icon: 'shield-halved'
+---
+
+AutoPentestX includes comprehensive safety controls to prevent accidental damage during penetration testing. Safe mode is **enabled by default** and implements multiple layers of protection during the exploitation phase.
+
+## What is Safe Mode?
+
+Safe mode is a protective mechanism in the Exploit Engine that prevents destructive actions during vulnerability exploitation. When enabled, the tool simulates exploitation attempts rather than executing them, providing security insights without risk.
+
+<Warning>
+Safe mode is **enabled by default** and should only be disabled in isolated lab environments with explicit authorization.
+</Warning>
+
+## Implementation
+
+### Default Configuration
+
+Safe mode is initialized in `exploit_engine.py:15`:
+
+```python
+class ExploitEngine:
+    def __init__(self, safe_mode=True):
+        """Initialize exploit engine"""
+        self.safe_mode = safe_mode
+        self.exploit_results = []
+        self.metasploit_available = self.check_metasploit()
+```
+
+The `AutoPentestX` main class also defaults to safe mode (`main.py:30`):
+
+```python
+class AutoPentestX:
+    def __init__(self, target, tester_name="AutoPentestX Team", 
+                 safe_mode=True, skip_web=False, skip_exploit=False):
+        self.safe_mode = safe_mode
+```
+
+### Enabling/Disabling
+
+<Tabs>
+  <Tab title="Safe Mode (Default)">
+    ```bash
+    # Safe mode enabled - default behavior
+    python main.py -t 192.168.1.100
+    ```
+    
+    No exploitation is executed. All attacks are simulated.
+  </Tab>
+  
+  <Tab title="Unsafe Mode">
+    ```bash
+    # Disable safe mode - USE WITH EXTREME CAUTION
+    python main.py -t 192.168.1.100 --no-safe-mode
+    ```
+    
+    <Warning>
+    This can cause system damage, data loss, or service disruption. Only use in authorized lab environments.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## Safe Mode Behavior
+
+### Exploitation Simulation
+
+When safe mode is enabled, the `simulate_exploitation()` method prevents actual attacks (`exploit_engine.py:187-250`):
+
+```python
+def simulate_exploitation(self, matched_exploits, target):
+    print(f"Safe Mode: {'ENABLED' if self.safe_mode else 'DISABLED'}")
+    
+    if self.safe_mode:
+        print("[*] Running in SAFE MODE - No actual exploitation will occur")
+        print("[*] Generating exploit feasibility reports...\n")
+```
+
+<Steps>
+  <Step title="Exploit Identification">
+    Matches vulnerabilities to available Metasploit modules without execution
+  </Step>
+  
+  <Step title="Feasibility Analysis">
+    Determines which exploits would likely succeed based on service versions
+  </Step>
+  
+  <Step title="Resource Script Generation">
+    Creates Metasploit RC scripts for manual validation testing
+  </Step>
+  
+  <Step title="Results Logging">
+    Records what would have happened without executing exploits
+  </Step>
+</Steps>
+
+### What Gets Blocked
+
+In safe mode, these actions are **simulated but not executed**:
+
+- 🚫 Metasploit exploit module execution
+- 🚫 Payload delivery to target systems
+- 🚫 Shell/session establishment
+- 🚫 Post-exploitation activities
+- 🚫 File system modifications
+- 🚫 Service manipulation or crashes
+
+### What Still Happens
+
+Safe mode **allows** these non-destructive activities:
+
+- ✅ Port scanning and enumeration
+- ✅ Service banner grabbing
+- ✅ Vulnerability detection
+- ✅ CVE database queries
+- ✅ Risk assessment calculations
+- ✅ Report generation
+
+## Exploit Execution Logic
+
+### Safe Mode Check
+
+Before any exploitation, the engine verifies safe mode status (`exploit_engine.py:119-154`):
+
+```python
+def run_metasploit_exploit(self, target, port, exploit_module, payload='generic/shell_reverse_tcp'):
+    if not self.metasploit_available:
+        return {
+            'status': 'SKIPPED',
+            'reason': 'Metasploit not available'
+        }
+    
+    if not self.safe_mode:
+        print("[!] WARNING: Safe mode disabled - This could cause system damage!")
+        return {
+            'status': 'BLOCKED',
+            'reason': 'Exploitation disabled for safety'
+        }
+    
+    print(f"[*] Simulating exploit: {exploit_module}")
+    
+    # In safe mode, we only CHECK if exploit would work
+    result = {
+        'status': 'SIMULATED',
+        'safe_mode': True,
+        'result': 'Exploit would be executed in non-safe mode'
+    }
+```
+
+### Dangerous Exploit Detection
+
+The exploit database flags potentially destructive exploits (`exploit_engine.py:22-53`):
+
+```python
+self.exploit_db = {
+    'vsftpd 2.3.4': {
+        'name': 'vsftpd_234_backdoor',
+        'module': 'exploit/unix/ftp/vsftpd_234_backdoor',
+        'safe': True  # Non-destructive
+    },
+    'EternalBlue': {
+        'name': 'ms17_010_eternalblue',
+        'module': 'exploit/windows/smb/ms17_010_eternalblue',
+        'safe': False  # Potentially destructive - can crash system
+    }
+}
+```
+
+### Dangerous Exploit Handling
+
+Even in safe mode, extra caution is applied to dangerous exploits (`exploit_engine.py:210-219`):
+
+```python
+# Check if exploit is safe to run
+if not exploit.get('safe', False) and self.safe_mode:
+    print(f"[!] Skipping potentially dangerous exploit: {exploit['name']}")
+    result = {
+        'port': port,
+        'exploit_name': exploit['name'],
+        'status': 'SKIPPED',
+        'reason': 'Exploit marked as potentially destructive',
+        'safe_mode': True
+    }
+```
+
+<Info>
+Exploits marked as `safe: False` are **always skipped** in safe mode, even if Metasploit is available.
+</Info>
+
+## Resource Script Generation
+
+### Metasploit RC Scripts
+
+For manual validation, safe mode generates Metasploit resource scripts (`exploit_engine.py:156-185`):
+
+```python
+def create_rc_script(self, target, port, exploit_module, payload):
+    rc_content = f"""# Metasploit Resource Script
+# Generated by AutoPentestX
+# Target: {target}:{port}
+# Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+use {exploit_module}
+set RHOSTS {target}
+set RPORT {port}
+set PAYLOAD {payload}
+set LHOST 0.0.0.0
+set LPORT 4444
+check
+# Exploit execution disabled in safe mode
+# Uncomment to execute: exploit
+"""
+    
+    rc_filename = f"exploits/exploit_{target}_{port}.rc"
+    os.makedirs('exploits', exist_ok=True)
+    with open(rc_filename, 'w') as f:
+        f.write(rc_content)
+```
+
+### Using RC Scripts
+
+Generated scripts can be used for manual testing in authorized environments:
+
+```bash
+# Review the generated script
+cat exploits/exploit_192.168.1.100_21_20250311_143022.rc
+
+# Use with Metasploit (in authorized lab only)
+msfconsole -r exploits/exploit_192.168.1.100_21_20250311_143022.rc
+```
+
+<Warning>
+Only execute RC scripts in isolated lab environments with proper authorization. Never run these against production systems.
+</Warning>
+
+## Output Indicators
+
+### Console Output
+
+Safe mode status is clearly displayed during execution:
+
+```bash
+╔══════════════════════════════════════════════════════════════════╗
+║ [PHASE 6] ▶ Exploit simulation [SAFE MODE]...                   ║
+╚══════════════════════════════════════════════════════════════════╝
+
+============================================================
+AutoPentestX - Exploitation Simulation
+============================================================
+Safe Mode: ENABLED
+Target: 192.168.1.100
+============================================================
+
+[*] Running in SAFE MODE - No actual exploitation will occur
+[*] Generating exploit feasibility reports...
+```
+
+### Initialization Banner
+
+The startup banner shows safe mode status (`main.py:64-68`):
+
+```bash
+┌────────────────────── [MISSION BRIEFING] ─────────────────────────┐
+│ ► Target IP/Domain: 192.168.1.100
+│ ► Operator: Security Team
+│ ► Safe Mode: [✓] ENABLED
+│ ► Timestamp: 2026-03-11 14:30:22
+└───────────────────────────────────────────────────────────────────┘
+```
+
+## Unsafe Mode Risks
+
+### When to Consider Disabling
+
+Only disable safe mode when **ALL** of these conditions are met:
+
+<Steps>
+  <Step title="Written Authorization">
+    You have explicit, written permission from the system owner
+  </Step>
+  
+  <Step title="Isolated Environment">
+    Target is in an isolated lab environment, not connected to production
+  </Step>
+  
+  <Step title="Backup Available">
+    Complete system backups exist and have been tested
+  </Step>
+  
+  <Step title="Downtime Acceptable">
+    Service disruption or system crashes are acceptable
+  </Step>
+  
+  <Step title="Expert Supervision">
+    Experienced security professional is supervising
+  </Step>
+</Steps>
+
+### Potential Consequences
+
+Disabling safe mode can result in:
+
+<Warning>
+**System Damage**
+- Crashed services or kernel panics
+- Corrupted file systems
+- Lost or modified data
+- Bricked systems requiring reinstallation
+</Warning>
+
+<Warning>
+**Legal Issues**  
+- Unauthorized access charges
+- Computer fraud violations
+- Civil liability for damages
+- Criminal prosecution
+</Warning>
+
+<Warning>
+**Operational Impact**
+- Production service outages
+- Business disruption
+- Data loss or corruption
+- Customer impact
+</Warning>
+
+### Unsafe Mode Behavior
+
+When disabled (`--no-safe-mode`), the tool:
+
+1. **Attempts real exploitation** using Metasploit
+2. **Delivers payloads** to target systems
+3. **Establishes shells** if successful
+4. **May crash services** or cause instability
+5. **Can modify files** or system state
+
+## Best Practices
+
+### Always Use Safe Mode For
+
+<CardGroup cols={2}>
+  <Card title="Learning" icon="graduation-cap">
+    Educational environments and training labs
+  </Card>
+  
+  <Card title="Reconnaissance" icon="binoculars">
+    Initial assessment and information gathering
+  </Card>
+  
+  <Card title="Client Scanning" icon="handshake">
+    External vulnerability assessments
+  </Card>
+  
+  <Card title="Reporting" icon="file-pdf">
+    Generating risk reports without exploitation
+  </Card>
+</CardGroup>
+
+### Only Disable Safe Mode For
+
+<CardGroup cols={2}>
+  <Card title="Lab Testing" icon="flask">
+    Isolated VM environments for testing
+  </Card>
+  
+  <Card title="Red Team Ops" icon="user-secret">
+    Authorized red team engagements with proper scope
+  </Card>
+  
+  <Card title="Validation" icon="check-double">
+    Proving exploitability in controlled conditions
+  </Card>
+  
+  <Card title="Research" icon="microscope">
+    Security research in isolated environments
+  </Card>
+</CardGroup>
+
+### Configuration Management
+
+Track safe mode settings in your workflow:
+
+```bash
+# Document your configuration
+echo "Scan Date: $(date)" > scan_config.txt
+echo "Target: 192.168.1.100" >> scan_config.txt
+echo "Safe Mode: ENABLED" >> scan_config.txt
+echo "Operator: John Doe" >> scan_config.txt
+```
+
+## Verification
+
+### Checking Safe Mode Status
+
+Verify safe mode is active by reviewing:
+
+1. **Startup banner** - Shows `Safe Mode: [✓] ENABLED`
+2. **Phase 6 header** - Shows `[SAFE MODE]` tag
+3. **Exploitation output** - Shows "Running in SAFE MODE" message
+4. **Report metadata** - Includes safe mode status
+5. **Database records** - `safe_mode` field in exploits table
+
+### Log Verification
+
+Check logs for confirmation:
+
+```bash
+grep "Safe Mode" logs/autopentestx_*.log
+# Output: Safe Mode: ENABLED
+```
+
+## Database Recording
+
+Safe mode status is recorded in the database for audit trails:
+
+```python
+# Stored in exploit results
+exploit_data = {
+    'name': exploit.get('exploit_name'),
+    'status': exploit.get('status'),
+    'safe_mode': self.safe_mode,
+    'result': json.dumps(exploit)
+}
+self.db.insert_exploit(self.scan_id, None, exploit_data)
+```
+
+This ensures you can always verify whether exploitation was simulated or executed.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Safe mode is disabled by default">
+    Check your command line arguments. Ensure you're **not** using `--no-safe-mode`:
+    
+    ```bash
+    # Correct - safe mode enabled
+    python main.py -t 192.168.1.100
+    
+    # Incorrect - safe mode disabled
+    python main.py -t 192.168.1.100 --no-safe-mode
+    ```
+  </Accordion>
+  
+  <Accordion title="Exploits showing as BLOCKED instead of SIMULATED">
+    This is intentional. Exploits marked as `safe: False` are blocked even in safe mode:
+    
+    ```python
+    # This is correct behavior
+    'status': 'BLOCKED',
+    'reason': 'Exploitation disabled for safety'
+    ```
+  </Accordion>
+  
+  <Accordion title="Want to test exploits manually">
+    Use the generated RC scripts in an isolated lab:
+    
+    ```bash
+    # Generated scripts are in exploits/ directory
+    ls -la exploits/
+    
+    # Use in Metasploit (authorized lab only)
+    msfconsole -r exploits/exploit_target_port.rc
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Comparison Table
+
+| Feature | Safe Mode (Default) | Unsafe Mode |
+|---------|-------------------|-------------|
+| Port scanning | ✅ Allowed | ✅ Allowed |
+| Vulnerability detection | ✅ Allowed | ✅ Allowed |
+| CVE lookup | ✅ Allowed | ✅ Allowed |
+| Risk assessment | ✅ Allowed | ✅ Allowed |
+| Exploit matching | ✅ Allowed | ✅ Allowed |
+| Exploit execution | ❌ Simulated only | ⚠️ Real execution |
+| RC script generation | ✅ Generated | ✅ Generated |
+| System damage risk | ✅ None | ⚠️ High |
+| Recommended for | 📚 Learning, 🔍 Scanning | 🧪 Lab testing only |
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Legal & Ethical Guidelines" icon="scale-balanced" href="/concepts/legal-ethical">
+    Understand authorization and legal requirements
+  </Card>
+  
+  <Card title="Run Your First Scan" icon="play" href="/usage/basic-scan">
+    Execute a safe penetration test
+  </Card>
+  
+  <Card title="Understanding Reports" icon="file-chart-column" href="/usage/reports">
+    Interpret exploitation simulation results
+  </Card>
+  
+  <Card title="Advanced Options" icon="sliders" href="/usage/cli-reference">
+    Explore all CLI configuration options
+  </Card>
+</CardGroup>
+
+<Info>
+Safe mode provides comprehensive security insights without the risks of active exploitation. It's suitable for 99% of penetration testing scenarios.
+</Info>

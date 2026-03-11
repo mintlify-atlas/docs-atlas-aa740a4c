@@ -1,0 +1,84 @@
+---
+title: "Introduction"
+description: "Welcome to AutoPentestX - Automated penetration testing and vulnerability assessment toolkit"
+---
+
+# AutoPentestX
+
+AutoPentestX is an automated penetration testing and vulnerability assessment toolkit with comprehensive reporting. Scan networks, identify vulnerabilities, assess risk, and generate professional PDF reports — all with a single command.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Network Scanning" icon="network-wired" href="/modules/scanner">
+    Automated port scanning, service detection, and OS fingerprinting with Nmap
+  </Card>
+  <Card title="Vulnerability Assessment" icon="shield-exclamation" href="/modules/vulnerability-scanner">
+    Web vulnerability scanning with Nikto and SQL injection testing with SQLMap
+  </Card>
+  <Card title="CVE Intelligence" icon="database" href="/modules/cve-lookup">
+    Automated CVE database lookup with CVSS scoring and exploit matching
+  </Card>
+  <Card title="Risk Analysis" icon="chart-line" href="/modules/risk-engine">
+    Multi-factor risk assessment engine with prioritized recommendations
+  </Card>
+  <Card title="Safe Exploitation" icon="bug" href="/modules/exploit-engine">
+    Metasploit integration with safe mode for authorized testing
+  </Card>
+  <Card title="PDF Reports" icon="file-pdf" href="/output/pdf-reports">
+    Professional vulnerability reports with executive summaries
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+<Steps>
+  <Step title="Install AutoPentestX">
+    Clone the repository and run the automated installer script.
+    
+    ```bash
+    git clone https://github.com/Gowtham-Darkseid/AutoPentestX.git
+    cd AutoPentestX
+    chmod +x install.sh
+    ./install.sh
+    ```
+  </Step>
+  
+  <Step title="Run your first scan">
+    Execute a basic scan against an authorized target.
+    
+    ```bash
+    ./autopentestx.sh 127.0.0.1
+    ```
+  </Step>
+  
+  <Step title="Review the report">
+    Check the generated PDF report and database for detailed findings.
+    
+    ```bash
+    ls reports/
+    ```
+  </Step>
+</Steps>
+
+## Documentation
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    System requirements and installation guide
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get started in 5 minutes
+  </Card>
+  <Card title="Command Reference" icon="terminal" href="/commands/overview">
+    Complete CLI command documentation
+  </Card>
+  <Card title="Modules" icon="cubes" href="/modules/scanner">
+    Core module documentation
+  </Card>
+</CardGroup>
+
+<Warning>
+**Legal Notice**: AutoPentestX is designed for authorized penetration testing and educational purposes only. 
+You must have explicit written permission before scanning any target. Unauthorized access to computer systems is illegal.
+</Warning>

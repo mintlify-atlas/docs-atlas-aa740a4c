@@ -1,0 +1,464 @@
+---
+title: 'Permission Issues'
+description: 'Understanding and resolving permission errors in AutoPentestX'
+icon: 'lock'
+---
+
+## Why Root Permissions Are Required
+
+AutoPentestX uses **Nmap** for network scanning, which requires root (sudo) privileges for several scan techniques:
+
+<CardGroup cols={2}>
+  <Card title="SYN Scans (-sS)" icon="shield-halved">
+    Raw packet manipulation requires root access to create custom TCP packets
+  </Card>
+  <Card title="OS Detection (-O)" icon="computer">
+    Low-level network probes need raw socket access
+  </Card>
+  <Card title="Service Detection (-sV)" icon="magnifying-glass">
+    Some service fingerprinting techniques require privileged ports
+  </Card>
+  <Card title="Raw Sockets" icon="ethernet">
+    Direct network interface access is restricted to root user
+  </Card>
+</CardGroup>
+
+<Warning>
+  **Without sudo**, Nmap falls back to TCP connect scans (-sT), which are slower, noisier, and easier to detect. You may also get incomplete results.
+</Warning>
+
+---
+
+## Common Permission Errors
+
+<AccordionGroup>
+  <Accordion title="Nmap Permission Denied" icon="ban">
+    **Error Message:**
+    ```bash
+    [!] OS Detection failed: Permission denied
+    nmap.nmap.PortScannerError: 'nmap returned: 
+    You requested a scan type which requires root privileges.'
+    ```
+
+    **Cause:** Running AutoPentestX without sudo privileges.
+
+    **Solution:**
+    <Tabs>
+      <Tab title="Quick Fix">
+        Run the entire script with sudo:
+        ```bash
+        sudo python3 main.py -t 192.168.1.100
+        ```
+
+        Or using the wrapper script:
+        ```bash
+        sudo ./autopentestx.sh 192.168.1.100
+        ```
+      </Tab>
+
+      <Tab title="Virtual Environment">
+        If using a virtual environment:
+        ```bash
+        # Activate venv first
+        source venv/bin/activate
+
+        # Then run with sudo
+        sudo python3 main.py -t 192.168.1.100
+        ```
+
+        <Note>
+          The virtual environment must be activated **before** running sudo, or use the full path:
+          ```bash
+          sudo /home/user/AutoPentestX/venv/bin/python3 main.py -t 192.168.1.100
+          ```
+        </Note>
+      </Tab>
+
+      <Tab title="Passwordless Sudo (Advanced)">
+        For automated scanning, configure passwordless sudo for Nmap:
+
+        <Steps>
+          <Step title="Edit sudoers file">
+            ```bash
+            sudo visudo
+            ```
+          </Step>
+          <Step title="Add exception for Nmap">
+            Add this line at the end:
+            ```bash
+            username ALL=(ALL) NOPASSWD: /usr/bin/nmap
+            ```
+            Replace `username` with your actual username.
+          </Step>
+          <Step title="Save and test">
+            ```bash
+            sudo -n nmap --version
+            ```
+            Should run without asking for password.
+          </Step>
+        </Steps>
+
+        <Warning>
+          **Security Risk**: Only use passwordless sudo in controlled lab environments, never on production systems.
+        </Warning>
+      </Tab>
+    </Tabs>
+  </Accordion>
+
+  <Accordion title="File Permission Errors" icon="folder-open">
+    **Error Messages:**
+    ```bash
+    PermissionError: [Errno 13] Permission denied: 'reports/'
+    sqlite3.OperationalError: unable to open database file
+    OSError: [Errno 13] Permission denied: 'logs/autopentestx.log'
+    ```
+
+    **Cause:** Insufficient write permissions for output directories.
+
+    **Solution:**
+    <Steps>
+      <Step title="Check current permissions">
+        ```bash
+        ls -la reports/ logs/ database/
+        ```
+      </Step>
+      <Step title="Fix directory permissions">
+        ```bash
+        # Make directories writable
+        chmod 755 reports/ logs/ database/ exploits/
+
+        # If needed, change ownership
+        sudo chown -R $USER:$USER reports/ logs/ database/ exploits/
+        ```
+      </Step>
+      <Step title="Recreate directories if missing">
+        ```bash
+        mkdir -p reports logs database exploits
+        chmod 755 reports/ logs/ database/ exploits/
+        ```
+      </Step>
+      <Step title="Verify fix">
+        ```bash
+        # Test write access
+        touch reports/test.txt && rm reports/test.txt && echo "✓ Write access OK"
+        ```
+      </Step>
+    </Steps>
+
+    <Tip>
+      The `install.sh` script automatically creates these directories with proper permissions. Re-run it if directories are missing.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Script Execution Permission" icon="file-code">
+    **Error Message:**
+    ```bash
+    bash: ./install.sh: Permission denied
+    bash: ./autopentestx.sh: Permission denied
+    bash: ./main.py: Permission denied
+    ```
+
+    **Cause:** Execute bit not set on shell scripts or Python files.
+
+    **Solution:**
+    ```bash
+    # Make scripts executable
+    chmod +x install.sh
+    chmod +x autopentestx.sh
+    chmod +x main.py
+    chmod -R 755 modules/
+
+    # Verify
+    ls -lh *.sh *.py
+    ```
+
+    **Alternative:** Run explicitly with interpreter:
+    ```bash
+    bash install.sh
+    python3 main.py -t 192.168.1.100
+    ```
+  </Accordion>
+
+  <Accordion title="Virtual Environment Permission Issues" icon="python">
+    **Error Message:**
+    ```bash
+    PermissionError: [Errno 13] Permission denied: '/home/user/AutoPentestX/venv/bin/pip'
+    Could not install packages due to an EnvironmentError
+    ```
+
+    **Cause:** Virtual environment created with wrong ownership (often happens when using sudo).
+
+    **Solution:**
+    <Steps>
+      <Step title="Remove corrupted venv">
+        ```bash
+        rm -rf venv
+        ```
+      </Step>
+      <Step title="Recreate WITHOUT sudo">
+        ```bash
+        # IMPORTANT: Don't use sudo here!
+        python3 -m venv venv
+        ```
+      </Step>
+      <Step title="Activate and install packages">
+        ```bash
+        source venv/bin/activate
+        pip install -r requirements.txt
+        ```
+      </Step>
+      <Step title="Fix ownership if needed">
+        ```bash
+        # Only if venv was created with sudo
+        sudo chown -R $USER:$USER venv/
+        ```
+      </Step>
+    </Steps>
+
+    <Warning>
+      **NEVER create virtual environments with sudo**. This causes permission conflicts and security issues.
+    </Warning>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Understanding Sudo and AutoPentestX
+
+### When Sudo is Required
+
+<Tabs>
+  <Tab title="Required">
+    **These operations REQUIRE sudo:**
+
+    ✅ Full system scans with SYN scanning
+    ```bash
+    sudo python3 main.py -t 192.168.1.100
+    ```
+
+    ✅ OS detection and fingerprinting
+    ```bash
+    sudo python3 main.py -t example.com
+    ```
+
+    ✅ Raw packet manipulation
+    ```bash
+    sudo nmap -sS -O 192.168.1.100
+    ```
+
+    ✅ Installing system packages
+    ```bash
+    sudo apt-get install nmap nikto sqlmap
+    ```
+  </Tab>
+
+  <Tab title="Not Required">
+    **These operations DON'T need sudo:**
+
+    ❌ Creating virtual environment
+    ```bash
+    python3 -m venv venv  # No sudo!
+    ```
+
+    ❌ Installing Python packages in venv
+    ```bash
+    pip install -r requirements.txt  # No sudo!
+    ```
+
+    ❌ Accessing reports and logs
+    ```bash
+    cat reports/AutoPentestX_Report_*.pdf
+    ```
+
+    ❌ Querying the database
+    ```bash
+    sqlite3 database/autopentestx.db
+    ```
+  </Tab>
+
+  <Tab title="Optional">
+    **Reduced functionality without sudo:**
+
+    ⚠️ TCP connect scans (slower, less stealthy)
+    ```bash
+    # Will work but use -sT instead of -sS
+    python3 main.py -t 192.168.1.100
+    ```
+
+    ⚠️ Limited OS detection
+    ```bash
+    # Falls back to TTL-based detection
+    python3 main.py -t 192.168.1.100
+    ```
+
+    <Note>
+      You can run AutoPentestX without sudo, but many features will be disabled or degraded.
+    </Note>
+  </Tab>
+</Tabs>
+
+---
+
+## Security Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Principle of Least Privilege" icon="user-shield">
+    Only use sudo when necessary. Don't run entire sessions as root.
+    ```bash
+    # Good
+    sudo python3 main.py -t 192.168.1.100
+
+    # Bad
+    sudo su
+    python3 main.py -t 192.168.1.100
+    ```
+  </Card>
+
+  <Card title="Verify Commands" icon="magnifying-glass">
+    Always review what you're running with sudo
+    ```bash
+    # Check script content first
+    cat install.sh
+
+    # Then run with sudo
+    ./install.sh
+    ```
+  </Card>
+
+  <Card title="Limit Sudo Scope" icon="shield-check">
+    Use sudoers file to grant specific permissions
+    ```bash
+    # Only allow Nmap with sudo
+    username ALL=(ALL) NOPASSWD: /usr/bin/nmap
+    ```
+  </Card>
+
+  <Card title="Audit Sudo Usage" icon="list-check">
+    Review sudo logs regularly
+    ```bash
+    # Check sudo history
+    cat /var/log/auth.log | grep sudo
+    journalctl -u sudo
+    ```
+  </Card>
+</CardGroup>
+
+---
+
+## Docker Alternative (No Sudo Required)
+
+If you want to avoid sudo permission issues entirely, consider running AutoPentestX in Docker:
+
+```dockerfile Dockerfile
+FROM kalilinux/kali-rolling
+
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip nmap nikto sqlmap metasploit-framework
+
+WORKDIR /autopentestx
+COPY . .
+
+RUN pip3 install -r requirements.txt
+
+ENTRYPOINT ["python3", "main.py"]
+```
+
+```bash Build and Run
+# Build container with root access
+docker build -t autopentestx .
+
+# Run without sudo on host (container has root inside)
+docker run --rm autopentestx -t 192.168.1.100
+```
+
+<Tip>
+  Docker containers run with root privileges by default, so Nmap gets the permissions it needs without requiring sudo on your host system.
+</Tip>
+
+---
+
+## Checking Current Permissions
+
+Use these commands to diagnose permission issues:
+
+```bash System Information
+# Check if you're root
+whoami
+id
+
+# Check sudo access
+sudo -v
+
+# View sudo permissions
+sudo -l
+```
+
+```bash File Permissions
+# Check directory permissions
+ls -la reports/ logs/ database/
+
+# Check file ownership
+stat reports/ logs/ database/
+
+# View ACLs (if applicable)
+getfacl reports/
+```
+
+```bash Test Access
+# Test Nmap with sudo
+sudo nmap -sS localhost
+
+# Test write permissions
+touch reports/test.txt && rm reports/test.txt
+
+# Test database access
+sqlite3 database/autopentestx.db "SELECT 1;"
+```
+
+---
+
+## Troubleshooting Checklist
+
+Before asking for help with permission issues, verify:
+
+<Steps>
+  <Step title="Running with sudo">
+    ```bash
+    sudo python3 main.py -t 192.168.1.100
+    ```
+    ✅ Using sudo for network scanning
+  </Step>
+
+  <Step title="Directories exist">
+    ```bash
+    mkdir -p reports logs database exploits
+    ```
+    ✅ All required directories created
+  </Step>
+
+  <Step title="Correct ownership">
+    ```bash
+    ls -la | grep -E "reports|logs|database|exploits"
+    ```
+    ✅ Directories owned by your user
+  </Step>
+
+  <Step title="Scripts executable">
+    ```bash
+    chmod +x install.sh autopentestx.sh main.py
+    ```
+    ✅ Execute permissions set
+  </Step>
+
+  <Step title="Venv not root-owned">
+    ```bash
+    ls -la venv/
+    ```
+    ✅ Virtual environment owned by your user, not root
+  </Step>
+</Steps>
+
+<Card title="Related Documentation" icon="book">
+  - [Common Issues](/troubleshooting/common-issues) - General error solutions
+  - [Dependencies](/troubleshooting/dependencies) - Package installation problems
+</Card>

@@ -1,0 +1,765 @@
+---
+title: 'Dependency Issues'
+description: 'Resolving system and Python dependency problems in AutoPentestX'
+icon: 'puzzle-piece'
+---
+
+## Overview
+
+AutoPentestX requires both **system-level** tools and **Python packages** to function. This guide covers troubleshooting dependency installation and compatibility issues.
+
+<CardGroup cols={2}>
+  <Card title="System Dependencies" icon="server">
+    - Nmap
+    - Nikto
+    - SQLMap
+    - Metasploit (optional)
+  </Card>
+  <Card title="Python Dependencies" icon="python">
+    - python-nmap
+    - requests
+    - reportlab
+    - sqlparse
+  </Card>
+</CardGroup>
+
+---
+
+## System Dependencies
+
+### Required Packages
+
+<AccordionGroup>
+  <Accordion title="Nmap (Network Mapper)" icon="network-wired">
+    **Purpose:** Port scanning, service detection, OS fingerprinting
+
+    **Installation:**
+    <CodeGroup>
+    ```bash Ubuntu/Debian
+    sudo apt-get update
+    sudo apt-get install -y nmap
+    ```
+
+    ```bash Kali Linux
+    # Usually pre-installed
+    sudo apt-get install -y nmap
+    ```
+
+    ```bash From Source
+    wget https://nmap.org/dist/nmap-7.94.tar.bz2
+    tar xjf nmap-7.94.tar.bz2
+    cd nmap-7.94
+    ./configure
+    make
+    sudo make install
+    ```
+    </CodeGroup>
+
+    **Verification:**
+    ```bash
+    which nmap
+    nmap --version
+    # Should output: Nmap version 7.80+ 
+    ```
+
+    <Warning>
+      AutoPentestX **will not work** without Nmap. It's the core scanning engine.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Nikto (Web Scanner)" icon="globe">
+    **Purpose:** Web server vulnerability scanning, CGI testing
+
+    **Installation:**
+    <CodeGroup>
+    ```bash APT Package
+    sudo apt-get update
+    sudo apt-get install -y nikto
+    ```
+
+    ```bash From GitHub
+    git clone https://github.com/sullo/nikto.git
+    cd nikto/program
+    chmod +x nikto.pl
+    # Add to PATH or use full path
+    ```
+
+    ```bash Perl Dependencies
+    # If Nikto fails to run, install Perl modules
+    sudo apt-get install -y libnet-ssleay-perl
+    sudo cpan install Net::SSLeay
+    ```
+    </CodeGroup>
+
+    **Verification:**
+    ```bash
+    which nikto
+    nikto -Version
+    ```
+
+    **Workaround if unavailable:**
+    ```bash
+    # Skip web vulnerability scanning
+    python3 main.py -t 192.168.1.100 --skip-web
+    ```
+  </Accordion>
+
+  <Accordion title="SQLMap (SQL Injection Tool)" icon="shield-halved">
+    **Purpose:** Automated SQL injection detection and exploitation
+
+    **Installation:**
+    <CodeGroup>
+    ```bash APT Package
+    sudo apt-get update
+    sudo apt-get install -y sqlmap
+    ```
+
+    ```bash From GitHub (Latest)
+    git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git
+    cd sqlmap
+    python3 sqlmap.py --version
+    ```
+
+    ```bash Python Package
+    pip3 install sqlmap-python
+    ```
+    </CodeGroup>
+
+    **Verification:**
+    ```bash
+    which sqlmap
+    sqlmap --version
+    ```
+
+    **Workaround if unavailable:**
+    ```bash
+    # Skip SQL injection testing (part of --skip-web)
+    python3 main.py -t 192.168.1.100 --skip-web
+    ```
+  </Accordion>
+
+  <Accordion title="Metasploit Framework (Optional)" icon="terminal">
+    **Purpose:** Exploit generation, RC script creation, payload development
+
+    **Installation:**
+    <CodeGroup>
+    ```bash Official Installer
+    curl https://raw.githubusercontent.com/rapid7/metasploit-omnibus/master/config/templates/metasploit-framework-wrappers/msfupdate.erb > msfinstall
+    chmod 755 msfinstall
+    sudo ./msfinstall
+    ```
+
+    ```bash Kali Linux
+    # Pre-installed on Kali
+    sudo apt-get update
+    sudo apt-get install -y metasploit-framework
+    ```
+
+    ```bash Docker
+    docker pull metasploitframework/metasploit-framework
+    docker run -it metasploitframework/metasploit-framework
+    ```
+    </CodeGroup>
+
+    **Verification:**
+    ```bash
+    which msfconsole
+    msfconsole --version
+    ```
+
+    **Workaround if unavailable:**
+    ```bash
+    # Skip exploitation phase
+    python3 main.py -t 192.168.1.100 --skip-exploit
+    ```
+
+    <Note>
+      Metasploit is **optional**. AutoPentestX can perform reconnaissance and vulnerability scanning without it, but exploitation features will be limited.
+    </Note>
+  </Accordion>
+
+  <Accordion title="Supporting Packages" icon="box">
+    **Additional system packages required:**
+
+    ```bash Core Tools
+    sudo apt-get install -y \
+      python3 \
+      python3-pip \
+      python3-venv \
+      git \
+      curl \
+      wget
+    ```
+
+    ```bash PDF Generation Dependencies
+    # Required for ReportLab
+    sudo apt-get install -y \
+      libjpeg-dev \
+      zlib1g-dev \
+      libfreetype6-dev
+    ```
+
+    ```bash SSL/TLS Support
+    sudo apt-get install -y \
+      libssl-dev \
+      openssl
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Python Dependencies
+
+### Requirements File Breakdown
+
+AutoPentestX uses these Python packages (from `requirements.txt`):
+
+```text requirements.txt
+python-nmap==0.7.1
+requests>=2.31.0
+reportlab>=4.0.4
+sqlparse>=0.4.4
+```
+
+<AccordionGroup>
+  <Accordion title="python-nmap" icon="python">
+    **Purpose:** Python wrapper for Nmap
+
+    **Installation:**
+    ```bash
+    pip install python-nmap==0.7.1
+    ```
+
+    **Common Issues:**
+    <Tabs>
+      <Tab title="Module Not Found">
+        ```python
+        ModuleNotFoundError: No module named 'nmap'
+        ```
+
+        **Solution:**
+        ```bash
+        # Ensure virtual environment is activated
+        source venv/bin/activate
+
+        # Install package
+        pip install python-nmap
+
+        # Verify
+        python3 -c "import nmap; print(nmap.__version__)"
+        ```
+      </Tab>
+
+      <Tab title="Wrong Package">
+        If you accidentally installed `nmap` instead of `python-nmap`:
+
+        ```bash
+        pip uninstall nmap
+        pip install python-nmap
+        ```
+
+        <Warning>
+          The package is called **python-nmap**, not **nmap**. They are different packages!
+        </Warning>
+      </Tab>
+
+      <Tab title="Version Conflicts">
+        ```bash
+        # Force specific version
+        pip install python-nmap==0.7.1 --force-reinstall
+
+        # Or use compatible version
+        pip install 'python-nmap>=0.7.0,<1.0.0'
+        ```
+      </Tab>
+    </Tabs>
+  </Accordion>
+
+  <Accordion title="requests" icon="globe">
+    **Purpose:** HTTP library for web vulnerability scanning and CVE lookups
+
+    **Installation:**
+    ```bash
+    pip install requests>=2.31.0
+    ```
+
+    **Common Issues:**
+    <Tabs>
+      <Tab title="SSL Errors">
+        ```python
+        requests.exceptions.SSLError: [SSL: CERTIFICATE_VERIFY_FAILED]
+        ```
+
+        **Solution:**
+        ```bash
+        # Update certificates
+        pip install --upgrade certifi
+
+        # Or install requests with security extras
+        pip install 'requests[security]'
+        ```
+      </Tab>
+
+      <Tab title="Connection Timeout">
+        ```python
+        requests.exceptions.ConnectTimeout
+        requests.exceptions.ConnectionError
+        ```
+
+        **Causes:**
+        - Network connectivity issues
+        - Firewall blocking outbound connections
+        - Proxy configuration needed
+
+        **Solutions:**
+        ```bash
+        # Test connection
+        curl -I https://httpbin.org/get
+
+        # Configure proxy if needed
+        export HTTP_PROXY=http://proxy.example.com:8080
+        export HTTPS_PROXY=http://proxy.example.com:8080
+        ```
+      </Tab>
+    </Tabs>
+  </Accordion>
+
+  <Accordion title="reportlab" icon="file-pdf">
+    **Purpose:** PDF report generation
+
+    **Installation:**
+    ```bash
+    pip install reportlab>=4.0.4
+    ```
+
+    **Common Issues:**
+    <Tabs>
+      <Tab title="Build Errors">
+        ```bash
+        error: command 'gcc' failed with exit status 1
+        fatal error: Python.h: No such file or directory
+        ```
+
+        **Solution:**
+        ```bash
+        # Install build dependencies
+        sudo apt-get install -y \
+          python3-dev \
+          build-essential \
+          libjpeg-dev \
+          zlib1g-dev \
+          libfreetype6-dev
+
+        # Then reinstall
+        pip install --upgrade reportlab
+        ```
+      </Tab>
+
+      <Tab title="Import Errors">
+        ```python
+        ImportError: cannot import name 'ImageReader' from 'PIL'
+        ```
+
+        **Solution:**
+        ```bash
+        # Install Pillow (Python Imaging Library)
+        pip install --upgrade Pillow
+
+        # Reinstall reportlab
+        pip install --upgrade reportlab
+
+        # Verify
+        python3 -c "from reportlab.lib.pagesizes import letter; print('OK')"
+        ```
+      </Tab>
+
+      <Tab title="Font Issues">
+        ```python
+        reportlab.pdfgen.canvas.TTFError: Can't find font
+        ```
+
+        **Solution:**
+        ```bash
+        # Install fonts
+        sudo apt-get install -y \
+          fonts-dejavu \
+          fonts-liberation \
+          ttf-mscorefonts-installer
+
+        # Rebuild font cache
+        fc-cache -fv
+        ```
+      </Tab>
+    </Tabs>
+  </Accordion>
+
+  <Accordion title="sqlparse" icon="database">
+    **Purpose:** SQL parsing and formatting
+
+    **Installation:**
+    ```bash
+    pip install sqlparse>=0.4.4
+    ```
+
+    **Issues:**
+    Rarely causes problems. If needed:
+    ```bash
+    pip install --upgrade sqlparse
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Complete Dependency Resolution
+
+### Fresh Installation
+
+<Steps>
+  <Step title="Update system package lists">
+    ```bash
+    sudo apt-get update
+    sudo apt-get upgrade -y
+    ```
+  </Step>
+
+  <Step title="Install system dependencies">
+    ```bash
+    sudo apt-get install -y \
+      python3 \
+      python3-pip \
+      python3-venv \
+      nmap \
+      nikto \
+      sqlmap \
+      git \
+      curl \
+      wget \
+      build-essential \
+      python3-dev \
+      libjpeg-dev \
+      zlib1g-dev
+    ```
+  </Step>
+
+  <Step title="Create virtual environment">
+    ```bash
+    cd AutoPentestX
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+  </Step>
+
+  <Step title="Upgrade pip">
+    ```bash
+    pip install --upgrade pip setuptools wheel
+    ```
+  </Step>
+
+  <Step title="Install Python packages">
+    ```bash
+    pip install -r requirements.txt
+    ```
+  </Step>
+
+  <Step title="Verify installation">
+    ```bash
+    python3 -c "
+import nmap
+import requests
+from reportlab.lib.pagesizes import letter
+import sqlparse
+print('✓ All Python modules imported successfully')
+"
+    ```
+  </Step>
+
+  <Step title="Test system tools">
+    ```bash
+    which nmap && echo "✓ Nmap found"
+    which nikto && echo "✓ Nikto found" || echo "⚠ Nikto not found"
+    which sqlmap && echo "✓ SQLMap found" || echo "⚠ SQLMap not found"
+    which msfconsole && echo "✓ Metasploit found" || echo "⚠ Metasploit not found"
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Troubleshooting Dependency Installation
+
+<AccordionGroup>
+  <Accordion title="Pip Install Fails" icon="circle-xmark">
+    **Symptoms:**
+    - Package installation errors
+    - Compilation failures
+    - Permission denied errors
+
+    **Solutions:**
+    <CodeGroup>
+    ```bash Check pip version
+    pip --version
+    # Should be pip 21.0+
+
+    # Upgrade if old
+    python3 -m pip install --upgrade pip
+    ```
+
+    ```bash Clear pip cache
+    pip cache purge
+    pip install -r requirements.txt --no-cache-dir
+    ```
+
+    ```bash Use --user flag (if not in venv)
+    pip install --user -r requirements.txt
+    ```
+
+    ```bash Install from source
+    pip install --no-binary :all: python-nmap
+    ```
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Version Conflicts" icon="code-merge">
+    **Error Message:**
+    ```bash
+    ERROR: pip's dependency resolver does not currently take into account all the packages that are installed.
+    ```
+
+    **Solution:**
+    <Steps>
+      <Step title="Create fresh virtual environment">
+        ```bash
+        rm -rf venv
+        python3 -m venv venv
+        source venv/bin/activate
+        ```
+      </Step>
+      <Step title="Upgrade pip">
+        ```bash
+        pip install --upgrade pip
+        ```
+      </Step>
+      <Step title="Install requirements">
+        ```bash
+        pip install -r requirements.txt
+        ```
+      </Step>
+    </Steps>
+
+    <Note>
+      Creating a fresh virtual environment resolves most dependency conflicts.
+    </Note>
+  </Accordion>
+
+  <Accordion title="Missing System Headers" icon="file-code">
+    **Error Message:**
+    ```bash
+    fatal error: Python.h: No such file or directory
+    error: command 'gcc' failed with exit status 1
+    ```
+
+    **Solution:**
+    ```bash
+    # Install development headers
+    sudo apt-get install -y \
+      python3-dev \
+      build-essential \
+      gcc \
+      g++ \
+      make
+
+    # Then retry pip install
+    pip install -r requirements.txt
+    ```
+  </Accordion>
+
+  <Accordion title="Network/Proxy Issues" icon="wifi">
+    **Symptoms:**
+    - Timeout errors during pip install
+    - Cannot reach PyPI
+    - SSL certificate errors
+
+    **Solutions:**
+    <CodeGroup>
+    ```bash Configure proxy
+    export HTTP_PROXY=http://proxy.example.com:8080
+    export HTTPS_PROXY=http://proxy.example.com:8080
+    pip install -r requirements.txt
+    ```
+
+    ```bash Use different index
+    pip install -r requirements.txt --index-url https://mirrors.aliyun.com/pypi/simple/
+    ```
+
+    ```bash Increase timeout
+    pip install -r requirements.txt --timeout 300
+    ```
+
+    ```bash Disable SSL verification (UNSAFE)
+    # Only for testing!
+    pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org
+    ```
+    </CodeGroup>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Verification Script
+
+Use this script to verify all dependencies:
+
+```python check_dependencies.py
+#!/usr/bin/env python3
+"""Check AutoPentestX dependencies"""
+
+import sys
+import subprocess
+import importlib
+
+def check_system_tool(tool):
+    try:
+        result = subprocess.run(['which', tool], capture_output=True)
+        return result.returncode == 0
+    except:
+        return False
+
+def check_python_module(module):
+    try:
+        importlib.import_module(module)
+        return True
+    except ImportError:
+        return False
+
+print("=" * 60)
+print("AutoPentestX Dependency Checker")
+print("=" * 60)
+
+# System tools
+print("\n[System Tools]")
+tools = {'nmap': True, 'nikto': False, 'sqlmap': False, 'msfconsole': False}
+for tool, required in tools.items():
+    status = "✓" if check_system_tool(tool) else "✗"
+    req_str = "REQUIRED" if required else "OPTIONAL"
+    print(f"{status} {tool:15s} [{req_str}]")
+
+# Python modules
+print("\n[Python Modules]")
+modules = ['nmap', 'requests', 'reportlab', 'sqlparse']
+for module in modules:
+    status = "✓" if check_python_module(module) else "✗"
+    print(f"{status} {module:15s} [REQUIRED]")
+
+print("\n" + "=" * 60)
+print("Check complete!")
+```
+
+Run with:
+```bash
+python3 check_dependencies.py
+```
+
+---
+
+## Platform-Specific Notes
+
+<Tabs>
+  <Tab title="Ubuntu/Debian">
+    ```bash
+    # Update sources
+    sudo apt-get update
+
+    # Install everything
+    sudo apt-get install -y \
+      python3 python3-pip python3-venv \
+      nmap nikto sqlmap \
+      build-essential python3-dev \
+      libjpeg-dev zlib1g-dev
+
+    # Python packages
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
+  </Tab>
+
+  <Tab title="Kali Linux">
+    ```bash
+    # Most tools pre-installed
+    sudo apt-get update
+    sudo apt-get install -y python3-venv
+
+    # Python environment
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
+
+    <Note>
+      Kali Linux includes Nmap, Nikto, SQLMap, and Metasploit by default.
+    </Note>
+  </Tab>
+
+  <Tab title="Arch Linux">
+    ```bash
+    # Install dependencies
+    sudo pacman -Syu
+    sudo pacman -S python python-pip nmap nikto sqlmap
+
+    # AUR for additional tools
+    yay -S metasploit
+
+    # Python environment
+    python -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
+  </Tab>
+
+  <Tab title="macOS">
+    ```bash
+    # Install Homebrew first: https://brew.sh
+
+    # Install tools
+    brew install python nmap nikto sqlmap
+
+    # Python environment
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
+
+    <Warning>
+      Some features may not work on macOS due to raw socket restrictions. Running with sudo helps.
+    </Warning>
+  </Tab>
+</Tabs>
+
+---
+
+## Getting Help
+
+If dependencies still fail to install:
+
+1. **Collect diagnostic information:**
+   ```bash
+   python3 --version
+   pip --version
+   cat /etc/os-release
+   uname -a
+   ```
+
+2. **Check error logs:**
+   ```bash
+   pip install -r requirements.txt --verbose
+   ```
+
+3. **Consult other guides:**
+   - [Common Issues](/troubleshooting/common-issues)
+   - [Permission Problems](/troubleshooting/permissions)
+
+<Card title="Need More Help?" icon="life-ring" href="https://github.com/AutoPentestX/AutoPentestX/issues">
+  Open a GitHub issue with your system info and error messages
+</Card>

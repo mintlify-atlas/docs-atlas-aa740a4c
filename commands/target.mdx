@@ -1,0 +1,359 @@
+---
+title: Target Specification
+description: How to specify targets for AutoPentestX penetration testing
+icon: bullseye
+---
+
+The target specification is the only **required** parameter for AutoPentestX. It defines the system or network you're authorized to test.
+
+## Target Flag
+
+<ParamField path="-t, --target" type="string" required>
+  Target IP address or domain name to scan
+  
+  **Examples:**
+  - IPv4 address: `192.168.1.100`
+  - Domain name: `example.com`
+  - Private network: `10.0.0.1`
+  - Localhost: `127.0.0.1`
+</ParamField>
+
+## Supported Formats
+
+### IPv4 Addresses
+
+Standard IPv4 notation is fully supported:
+
+<CodeGroup>
+
+```bash Private Network
+python3 main.py -t 192.168.1.100
+```
+
+```bash Internal Network
+python3 main.py -t 10.0.0.50
+```
+
+```bash Localhost Testing
+python3 main.py -t 127.0.0.1
+```
+
+```bash Class B Network
+python3 main.py -t 172.16.0.100
+```
+
+</CodeGroup>
+
+### Domain Names
+
+Fully qualified domain names (FQDN) are resolved automatically:
+
+<CodeGroup>
+
+```bash Production Domain
+python3 main.py -t example.com
+```
+
+```bash Subdomain
+python3 main.py -t test.example.com
+```
+
+```bash Development Environment
+python3 main.py -t dev.internal.company.local
+```
+
+</CodeGroup>
+
+<Note>
+AutoPentestX performs DNS resolution before scanning. Ensure the target domain resolves correctly in your network environment.
+</Note>
+
+## Target Examples
+
+### Single Host Scanning
+
+```bash
+# Scan a single production server
+python3 main.py -t 192.168.1.100 -n "Security Team"
+```
+
+**Scan Phases:**
+1. DNS resolution (if domain name)
+2. Port scanning (Nmap)
+3. Service detection
+4. Vulnerability assessment
+5. Web application testing (unless `--skip-web`)
+6. Exploitation attempts (unless `--skip-exploit`)
+
+### Lab Environment Testing
+
+```bash
+# Test local vulnerable VM (Metasploitable, DVWA, etc.)
+python3 main.py -t 192.168.56.101
+```
+
+```bash
+# Localhost security audit
+python3 main.py -t 127.0.0.1 --skip-exploit
+```
+
+### Remote Server Assessment
+
+```bash
+# Test internet-facing server (with authorization)
+python3 main.py -t example.com -n "External Audit Team"
+```
+
+<Warning>
+When testing internet-facing targets:
+- Verify authorization documentation
+- Respect rate limits and time windows
+- Be aware of geographic restrictions
+- Consider using VPN or authorized source IPs
+</Warning>
+
+## Target Validation
+
+### Pre-Scan Confirmation
+
+AutoPentestX displays a confirmation prompt before initiating scans:
+
+```
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+                      ⚠️  LEGAL WARNING ⚠️
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+
+You are about to perform a penetration test on: 192.168.1.100
+
+This tool performs ACTIVE scanning and may:
+  • Trigger IDS/IPS alerts
+  • Generate significant network traffic
+  • Attempt to exploit vulnerabilities
+  • Modify system configurations
+
+Only proceed if you have:
+  ✓ Written authorization from the system owner
+  ✓ Defined scope and rules of engagement
+  ✓ Legal permission to perform security testing
+
+Unauthorized access to computer systems is ILLEGAL!
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+
+Do you have proper authorization to test this target? [yes/no]: 
+```
+
+<Tip>
+Type `yes` to proceed or `no` to abort. This safety mechanism prevents accidental unauthorized scanning.
+</Tip>
+
+## Network Reachability
+
+### Testing Connectivity
+
+Before running a full scan, verify target reachability:
+
+```bash
+# Test connectivity
+ping -c 4 192.168.1.100
+
+# Test DNS resolution
+nslookup example.com
+
+# Check basic port accessibility
+telnet 192.168.1.100 80
+```
+
+### Firewall Considerations
+
+<Accordion title="Common Network Issues">
+
+**Problem:** Target not responding to scans
+
+**Possible Causes:**
+- Host firewall blocking ICMP/TCP probes
+- Network firewall filtering scan traffic
+- Target is offline or unreachable
+- VPN/routing configuration issues
+
+**Solutions:**
+```bash
+# Verify target is online
+ping 192.168.1.100
+
+# Check routing
+traceroute 192.168.1.100
+
+# Test specific ports
+nmap -p 80,443 192.168.1.100
+```
+
+</Accordion>
+
+## Scope Restrictions
+
+### What AutoPentestX Does NOT Support
+
+<Warning>
+**Unsupported Target Formats:**
+- CIDR ranges: `192.168.1.0/24` ❌
+- Multiple targets: `192.168.1.1,192.168.1.2` ❌
+- IP ranges: `192.168.1.1-254` ❌
+- Wildcard notation: `192.168.1.*` ❌
+
+**Current Limitation:** AutoPentestX targets **one host per execution**.
+
+For multiple targets, run separate scans:
+```bash
+for ip in 192.168.1.{100..110}; do
+  python3 main.py -t $ip
+done
+```
+</Warning>
+
+## Target Selection Best Practices
+
+### Internal Network Testing
+
+<Steps>
+
+<Step title="Identify Test Targets">
+Document all systems in scope:
+- Production servers
+- Development environments
+- Network appliances
+- Virtual machines
+</Step>
+
+<Step title="Verify Authorization">
+Obtain written approval:
+- Signed penetration testing agreement
+- Defined scope and exclusions
+- Emergency contact information
+- Testing time windows
+</Step>
+
+<Step title="Start with Non-Production">
+Begin testing on safe environments:
+```bash
+# Test development environment first
+python3 main.py -t dev.example.com --skip-exploit
+```
+</Step>
+
+<Step title="Escalate to Production">
+After validating the process:
+```bash
+# Full production assessment (with authorization)
+python3 main.py -t prod.example.com
+```
+</Step>
+
+</Steps>
+
+### External Network Testing
+
+<Check>
+- [ ] Written authorization from organization
+- [ ] Scope clearly defined in contract
+- [ ] Notification sent to hosting provider
+- [ ] Emergency contacts documented
+- [ ] Testing window scheduled
+- [ ] Legal team approval obtained
+</Check>
+
+## Target Information Display
+
+During execution, AutoPentestX displays target information:
+
+```
+╔════════════════════════════════════════════════════════════════════╗
+║ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ AutoPentestX v1.0 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓       ║
+║      Automated Penetration Testing & Vulnerability Assessment    ║
+╚════════════════════════════════════════════════════════════════════╝
+
+┌────────────────────── [MISSION BRIEFING] ─────────────────────────┐
+│ ► Target IP/Domain: 192.168.1.100
+│ ► Operator: Security Team
+│ ► Safe Mode: [✓] ENABLED
+│ ► Timestamp: 2026-03-11 14:30:00
+└───────────────────────────────────────────────────────────────────┘
+```
+
+## Troubleshooting Target Issues
+
+### Invalid Target Error
+
+```bash
+python3 main.py -t invalid_target
+```
+
+**Error:**
+```
+[✗] Error: Invalid target format
+[!] Target must be a valid IP address or domain name
+```
+
+**Solution:** Use valid IPv4 address or FQDN
+
+### DNS Resolution Failure
+
+```bash
+python3 main.py -t nonexistent.example.com
+```
+
+**Error:**
+```
+[✗] Error: Cannot resolve domain name
+[!] Check DNS configuration or use IP address directly
+```
+
+**Solution:**
+```bash
+# Use IP address instead
+python3 main.py -t 192.168.1.100
+
+# Or fix DNS resolution
+nslookup nonexistent.example.com
+```
+
+### Network Unreachable
+
+```
+[✗] Error: Target unreachable
+[!] Verify network connectivity and firewall rules
+```
+
+**Debugging Steps:**
+```bash
+# Check basic connectivity
+ping 192.168.1.100
+
+# Verify routing
+ip route get 192.168.1.100
+
+# Check firewall rules
+sudo iptables -L -n -v
+```
+
+## Related Topics
+
+<CardGroup cols={2}>
+
+<Card title="CLI Options" icon="sliders" href="/commands/options">
+Configure scan behavior with flags
+</Card>
+
+<Card title="Examples" icon="terminal" href="/commands/examples">
+Real-world target scanning examples
+</Card>
+
+<Card title="Network Scanning" icon="network-wired" href="/features/network-scanning">
+Understand the scanning process
+</Card>
+
+<Card title="Safe Mode" icon="shield" href="/features/safe-mode">
+Protection mechanisms during testing
+</Card>
+
+</CardGroup>

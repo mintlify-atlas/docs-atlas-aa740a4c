@@ -1,0 +1,535 @@
+---
+title: 'Database Queries'
+description: 'Query and analyze penetration test results from SQLite database'
+icon: 'database'
+---
+
+## Overview
+
+AutoPentestX stores all scan results in a SQLite database (`database/autopentestx.db`) for persistent storage, historical analysis, and custom reporting. The database schema is automatically created on first run.
+
+## Database Schema
+
+### Scans Table
+
+Primary table tracking all penetration test scans:
+
+```sql
+CREATE TABLE scans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    target TEXT NOT NULL,
+    scan_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    os_detection TEXT,
+    scan_duration REAL,
+    total_ports INTEGER,
+    open_ports INTEGER,
+    vulnerabilities_found INTEGER,
+    risk_score TEXT,
+    status TEXT DEFAULT 'completed'
+)
+```
+
+**Key Fields**:
+- `id` - Unique scan identifier
+- `target` - IP address or hostname
+- `scan_date` - Timestamp of scan execution
+- `os_detection` - Detected operating system
+- `scan_duration` - Time in seconds
+- `status` - `in_progress` or `completed`
+
+### Ports Table
+
+Stores discovered open ports and services:
+
+```sql
+CREATE TABLE ports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scan_id INTEGER,
+    port_number INTEGER,
+    protocol TEXT,
+    state TEXT,
+    service_name TEXT,
+    service_version TEXT,
+    FOREIGN KEY (scan_id) REFERENCES scans(id)
+)
+```
+
+**Relationships**: Links to `scans` table via `scan_id`
+
+### Vulnerabilities Table
+
+Records identified vulnerabilities:
+
+```sql
+CREATE TABLE vulnerabilities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scan_id INTEGER,
+    port_number INTEGER,
+    service_name TEXT,
+    vuln_name TEXT,
+    vuln_description TEXT,
+    cve_id TEXT,
+    cvss_score REAL,
+    risk_level TEXT,
+    exploitable BOOLEAN,
+    FOREIGN KEY (scan_id) REFERENCES scans(id)
+)
+```
+
+**Risk Levels**: CRITICAL, HIGH, MEDIUM, LOW, UNKNOWN
+
+### Exploits Table
+
+Tracks exploitation attempts (safe mode):
+
+```sql
+CREATE TABLE exploits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scan_id INTEGER,
+    vuln_id INTEGER,
+    exploit_name TEXT,
+    exploit_status TEXT,
+    exploit_result TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (scan_id) REFERENCES scans(id),
+    FOREIGN KEY (vuln_id) REFERENCES vulnerabilities(id)
+)
+```
+
+**Status Values**: SIMULATED, SKIPPED, SUCCESS, BLOCKED
+
+### Web Vulnerabilities Table
+
+Stores web-specific vulnerabilities from Nikto/SQLMap:
+
+```sql
+CREATE TABLE web_vulnerabilities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scan_id INTEGER,
+    url TEXT,
+    vuln_type TEXT,
+    severity TEXT,
+    description TEXT,
+    FOREIGN KEY (scan_id) REFERENCES scans(id)
+)
+```
+
+## Common Queries
+
+### View All Scans
+
+Retrieve all completed scans ordered by date:
+
+<CodeGroup>
+```sql Basic Query
+SELECT * FROM scans 
+ORDER BY scan_date DESC;
+```
+
+```sql With Formatting
+SELECT 
+    id AS "Scan ID",
+    target AS "Target",
+    datetime(scan_date, 'localtime') AS "Scan Date",
+    os_detection AS "OS",
+    risk_score AS "Risk",
+    status AS "Status"
+FROM scans
+ORDER BY scan_date DESC;
+```
+</CodeGroup>
+
+### Find Scans by Target
+
+```sql
+SELECT * FROM scans 
+WHERE target = '192.168.1.100'
+ORDER BY scan_date DESC;
+```
+
+### View Vulnerabilities for Specific Scan
+
+```sql
+SELECT 
+    port_number,
+    service_name,
+    vuln_name,
+    cve_id,
+    cvss_score,
+    risk_level
+FROM vulnerabilities
+WHERE scan_id = 1
+ORDER BY cvss_score DESC;
+```
+
+### Get High-Risk Vulnerabilities Across All Scans
+
+```sql
+SELECT 
+    s.target,
+    s.scan_date,
+    v.port_number,
+    v.service_name,
+    v.vuln_name,
+    v.cve_id,
+    v.cvss_score
+FROM vulnerabilities v
+JOIN scans s ON v.scan_id = s.id
+WHERE v.risk_level IN ('CRITICAL', 'HIGH')
+ORDER BY v.cvss_score DESC;
+```
+
+### Open Ports by Scan
+
+```sql
+SELECT 
+    port_number,
+    protocol,
+    state,
+    service_name,
+    service_version
+FROM ports
+WHERE scan_id = 1
+ORDER BY port_number ASC;
+```
+
+### Web Vulnerabilities Summary
+
+```sql
+SELECT 
+    vuln_type,
+    severity,
+    COUNT(*) as count
+FROM web_vulnerabilities
+WHERE scan_id = 1
+GROUP BY vuln_type, severity
+ORDER BY 
+    CASE severity
+        WHEN 'CRITICAL' THEN 1
+        WHEN 'HIGH' THEN 2
+        WHEN 'MEDIUM' THEN 3
+        WHEN 'LOW' THEN 4
+    END;
+```
+
+### Exploitation Attempts
+
+```sql
+SELECT 
+    e.exploit_name,
+    e.exploit_status,
+    e.timestamp,
+    v.vuln_name,
+    v.port_number
+FROM exploits e
+JOIN vulnerabilities v ON e.vuln_id = v.id
+WHERE e.scan_id = 1;
+```
+
+## Advanced Queries
+
+### Most Vulnerable Services
+
+Identify services with highest vulnerability counts:
+
+```sql
+SELECT 
+    service_name,
+    COUNT(*) as vuln_count,
+    AVG(cvss_score) as avg_cvss,
+    MAX(cvss_score) as max_cvss
+FROM vulnerabilities
+GROUP BY service_name
+HAVING vuln_count > 1
+ORDER BY vuln_count DESC, avg_cvss DESC;
+```
+
+### Risk Trend Over Time
+
+Track risk scores across multiple scans of same target:
+
+```sql
+SELECT 
+    target,
+    datetime(scan_date, 'localtime') as scan_date,
+    risk_score,
+    vulnerabilities_found,
+    open_ports
+FROM scans
+WHERE target = '192.168.1.100'
+ORDER BY scan_date ASC;
+```
+
+### Comprehensive Scan Report
+
+Generate complete scan overview:
+
+```sql
+SELECT 
+    s.id,
+    s.target,
+    s.os_detection,
+    s.scan_duration,
+    s.open_ports,
+    s.vulnerabilities_found,
+    s.risk_score,
+    COUNT(DISTINCT p.id) as ports_found,
+    COUNT(DISTINCT v.id) as vulns_found,
+    COUNT(DISTINCT wv.id) as web_vulns_found
+FROM scans s
+LEFT JOIN ports p ON s.id = p.scan_id
+LEFT JOIN vulnerabilities v ON s.id = v.scan_id
+LEFT JOIN web_vulnerabilities wv ON s.id = wv.scan_id
+WHERE s.id = 1
+GROUP BY s.id;
+```
+
+### CVE Distribution
+
+Analyze CVE coverage across scans:
+
+```sql
+SELECT 
+    cve_id,
+    COUNT(*) as occurrence_count,
+    AVG(cvss_score) as avg_cvss,
+    GROUP_CONCAT(DISTINCT service_name) as affected_services
+FROM vulnerabilities
+WHERE cve_id != 'N/A'
+GROUP BY cve_id
+ORDER BY occurrence_count DESC, avg_cvss DESC;
+```
+
+## Python API
+
+### Connecting to Database
+
+```python
+from modules.database import Database
+
+# Initialize database connection
+db = Database("database/autopentestx.db")
+```
+
+### Insert Scan Data
+
+<CodeGroup>
+```python Create Scan
+# Start new scan
+scan_id = db.insert_scan(
+    target="192.168.1.100",
+    os_detection="Linux Ubuntu 20.04"
+)
+print(f"Scan ID: {scan_id}")
+```
+
+```python Update Scan
+# Update scan with results
+db.update_scan(
+    scan_id,
+    scan_duration=45.67,
+    total_ports=5,
+    open_ports=5,
+    vulnerabilities_found=17,
+    risk_score="HIGH",
+    status="completed"
+)
+```
+</CodeGroup>
+
+### Insert Port Data
+
+```python
+port_data = {
+    'port': 80,
+    'protocol': 'tcp',
+    'state': 'open',
+    'service': 'http',
+    'version': 'Apache 2.4.41'
+}
+
+db.insert_port(scan_id, port_data)
+```
+
+### Insert Vulnerability
+
+```python
+vuln_data = {
+    'port': 80,
+    'service': 'http',
+    'name': 'Apache Server Outdated',
+    'description': 'Apache httpd 2.4.41 has known vulnerabilities',
+    'cve_id': 'CVE-2021-44790',
+    'cvss_score': 9.8,
+    'risk_level': 'CRITICAL',
+    'exploitable': True
+}
+
+vuln_id = db.insert_vulnerability(scan_id, vuln_data)
+```
+
+### Insert Web Vulnerability
+
+```python
+web_vuln_data = {
+    'url': 'http://192.168.1.100/admin',
+    'type': 'SQL Injection',
+    'severity': 'CRITICAL',
+    'description': 'SQL injection in login form'
+}
+
+db.insert_web_vulnerability(scan_id, web_vuln_data)
+```
+
+### Insert Exploit Attempt
+
+```python
+exploit_data = {
+    'name': 'apache_mod_cgi_bash_env_exec',
+    'status': 'SIMULATED',
+    'result': 'Safe mode - exploit not executed'
+}
+
+db.insert_exploit(scan_id, vuln_id, exploit_data)
+```
+
+### Retrieve Scan Data
+
+```python
+# Get complete scan data
+scan_data = db.get_scan_data(scan_id)
+
+print(f"Scan: {scan_data['scan']}")
+print(f"Ports: {len(scan_data['ports'])}")
+print(f"Vulnerabilities: {len(scan_data['vulnerabilities'])}")
+print(f"Web Vulns: {len(scan_data['web_vulnerabilities'])}")
+print(f"Exploits: {len(scan_data['exploits'])}")
+```
+
+### List All Scans
+
+```python
+all_scans = db.get_all_scans()
+
+for scan in all_scans:
+    print(f"Scan {scan[0]}: {scan[1]} - {scan[2]}")
+```
+
+### Close Connection
+
+```python
+db.close()
+```
+
+## Database Utilities
+
+### Export to CSV
+
+Export scan results for external analysis:
+
+```bash
+sqlite3 -header -csv database/autopentestx.db \
+  "SELECT * FROM scans;" > scans_export.csv
+```
+
+### Backup Database
+
+<CodeGroup>
+```bash SQLite Backup
+sqlite3 database/autopentestx.db ".backup 'backup/autopentestx_backup.db'"
+```
+
+```bash File Copy
+cp database/autopentestx.db backup/autopentestx_$(date +%Y%m%d).db
+```
+</CodeGroup>
+
+### Database Statistics
+
+```sql
+SELECT 
+    (SELECT COUNT(*) FROM scans) as total_scans,
+    (SELECT COUNT(*) FROM ports) as total_ports,
+    (SELECT COUNT(*) FROM vulnerabilities) as total_vulnerabilities,
+    (SELECT COUNT(*) FROM web_vulnerabilities) as total_web_vulns,
+    (SELECT COUNT(*) FROM exploits) as total_exploits;
+```
+
+## Interactive Database Access
+
+### Using SQLite CLI
+
+```bash
+sqlite3 database/autopentestx.db
+```
+
+**Useful commands**:
+```sql
+.tables              -- List all tables
+.schema scans        -- Show table structure
+.headers on          -- Display column headers
+.mode column         -- Format output as columns
+.width 10 30 20      -- Set column widths
+```
+
+### Using Python Interactive Shell
+
+```python
+python3 -c "from modules.database import Database; db = Database(); \
+print(db.get_all_scans()); db.close()"
+```
+
+<Info>
+The database is automatically created at `database/autopentestx.db` on first run. Ensure the `database/` directory has appropriate write permissions.
+</Info>
+
+## Best Practices
+
+1. **Regular Backups**: Back up database before major scans
+2. **Indexing**: Add indexes for frequently queried columns
+3. **Maintenance**: Periodically vacuum database: `VACUUM;`
+4. **Security**: Restrict database file permissions: `chmod 600`
+5. **Archival**: Export old scans to CSV for long-term storage
+
+## Troubleshooting
+
+<Accordion title="Database locked error">
+  **Cause**: Another process is accessing the database
+  
+  **Solution**:
+  ```bash
+  # Check for locks
+  lsof database/autopentestx.db
+  
+  # Close connections properly
+  db.close()
+  ```
+</Accordion>
+
+<Accordion title="Table doesn't exist">
+  **Cause**: Database tables weren't created
+  
+  **Solution**:
+  ```python
+  from modules.database import Database
+  db = Database()
+  db.create_tables()
+  ```
+</Accordion>
+
+<Accordion title="Disk space issues">
+  **Cause**: Large number of scans consuming storage
+  
+  **Solution**:
+  ```sql
+  -- Delete old scans
+  DELETE FROM scans WHERE scan_date < date('now', '-30 days');
+  VACUUM;
+  ```
+</Accordion>
+
+## Related Resources
+
+- [PDF Reports](/output/pdf-reports) - Generate reports from database data
+- [Log Files](/output/logs) - Debugging database operations
+- [Risk Assessment](/core-features/risk-assessment) - Understanding risk_score calculations

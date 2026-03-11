@@ -1,0 +1,224 @@
+---
+title: CLI Overview
+description: Command-line interface for AutoPentestX automated penetration testing
+icon: terminal
+---
+
+AutoPentestX provides a powerful command-line interface for automated penetration testing. The CLI supports both direct Python execution and a convenient wrapper script for streamlined operations.
+
+## Installation Verification
+
+Before using the CLI commands, ensure AutoPentestX is properly installed:
+
+```bash
+cd AutoPentestX
+chmod +x install.sh
+./install.sh
+```
+
+## Command Syntax
+
+AutoPentestX can be invoked using two methods:
+
+<CodeGroup>
+
+```bash Python Direct
+python3 main.py -t <target> [options]
+```
+
+```bash Wrapper Script
+./autopentestx.sh <target> [options]
+```
+
+</CodeGroup>
+
+<Note>
+The wrapper script (`autopentestx.sh`) automatically handles virtual environment activation, logging, and provides enhanced terminal output with legal warnings.
+</Note>
+
+## Basic Usage
+
+The minimum required argument is the target specification:
+
+```bash
+python3 main.py -t 192.168.1.100
+```
+
+This initiates a full-spectrum penetration test against the specified target with all default settings enabled.
+
+## Command Structure
+
+```
+python3 main.py -t <target> [--options]
+                 │           │
+                 │           └─ Optional flags for customization
+                 └─ Required target IP or domain
+```
+
+## Quick Reference
+
+<CardGroup cols={2}>
+
+<Card title="Full Scan" icon="radar">
+```bash
+python3 main.py -t 192.168.1.100
+```
+Complete penetration test with all modules
+</Card>
+
+<Card title="Quick Recon" icon="magnifying-glass">
+```bash
+python3 main.py -t 192.168.1.100 --skip-web --skip-exploit
+```
+Network reconnaissance only (5-10 min)
+</Card>
+
+<Card title="Web Scan Skip" icon="globe">
+```bash
+python3 main.py -t 192.168.1.100 --skip-web
+```
+Skip Nikto and SQLMap scans
+</Card>
+
+<Card title="Custom Operator" icon="user">
+```bash
+python3 main.py -t 192.168.1.100 -n "Your Name"
+```
+Set custom tester name in reports
+</Card>
+
+</CardGroup>
+
+## Help System
+
+Access the built-in help documentation:
+
+```bash
+python3 main.py --help
+```
+
+<Accordion title="Help Output Example">
+```
+usage: main.py [-h] -t TARGET [-n TESTER_NAME] [--no-safe-mode]
+               [--skip-web] [--skip-exploit] [--version]
+
+AutoPentestX - Automated Penetration Testing Toolkit
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -t TARGET, --target TARGET
+                        Target IP address or domain name
+  -n TESTER_NAME, --tester-name TESTER_NAME
+                        Name of the penetration tester (default: AutoPentestX Team)
+  --no-safe-mode        Disable safe mode (NOT RECOMMENDED)
+  --skip-web            Skip web vulnerability scanning (Nikto/SQLMap)
+  --skip-exploit        Skip exploitation assessment
+  --version             show program's version number and exit
+
+Examples:
+  python main.py -t 192.168.1.100
+  python main.py -t example.com -n "John Doe"
+  python main.py -t 10.0.0.1 --skip-web --skip-exploit
+  
+WARNING: This tool is for AUTHORIZED testing and EDUCATIONAL purposes ONLY.
+         Unauthorized access to computer systems is ILLEGAL!
+```
+</Accordion>
+
+## Version Information
+
+Check the installed version:
+
+```bash
+python3 main.py --version
+```
+
+**Output:**
+```
+AutoPentestX v1.0
+```
+
+## Virtual Environment
+
+<Tip>
+For manual execution, activate the virtual environment first:
+
+```bash
+source venv/bin/activate
+python3 main.py -t <target>
+deactivate  # When finished
+```
+
+The wrapper script handles this automatically.
+</Tip>
+
+## Execution Modes
+
+### Lightning Strike (5-10 minutes)
+```bash
+python3 main.py -t TARGET --skip-web --skip-exploit
+```
+- Rapid reconnaissance only
+- Port scanning and service detection
+- Minimal network footprint
+
+### Tactical Assault (10-20 minutes)
+```bash
+python3 main.py -t TARGET --skip-exploit
+```
+- Full port scanning
+- Web vulnerability detection (Nikto, SQLMap)
+- No exploitation attempts
+
+### Total Annihilation (20-30 minutes)
+```bash
+python3 main.py -t TARGET
+```
+- Complete penetration testing suite
+- All scanning and exploitation modules
+- Comprehensive vulnerability assessment
+
+## Output Locations
+
+After execution, results are saved to:
+
+- **PDF Reports:** `reports/AutoPentestX_Report_*.pdf`
+- **Database:** `database/autopentestx.db`
+- **Logs:** `logs/autopentestx_*.log`
+- **Exploits:** `exploits/` (Metasploit RC scripts)
+
+## Legal Warning
+
+<Warning>
+**CRITICAL:** This tool should ONLY be used on systems you own or have explicit written authorization to test.
+
+Unauthorized access to computer systems is **ILLEGAL** and may result in:
+- Criminal prosecution
+- Federal charges under CFAA (Computer Fraud and Abuse Act)
+- Civil liability
+- Permanent criminal record
+
+Always obtain proper authorization before conducting any penetration testing activities.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+
+<Card title="Target Options" icon="bullseye" href="/commands/target">
+Learn about target specification formats
+</Card>
+
+<Card title="CLI Flags" icon="flag" href="/commands/options">
+Explore all available command-line options
+</Card>
+
+<Card title="Examples" icon="code" href="/commands/examples">
+See real-world usage examples
+</Card>
+
+<Card title="Configuration" icon="sliders" href="/configuration">
+Advanced configuration options
+</Card>
+
+</CardGroup>

@@ -1,0 +1,533 @@
+---
+title: 'Database Configuration'
+description: 'SQLite database schema and data persistence for AutoPentestX'
+icon: 'database'
+---
+
+# Database Configuration
+
+AutoPentestX uses SQLite to store scan results, vulnerabilities, exploits, and historical data. All scan data is persisted to enable reporting, analysis, and audit trails.
+
+## Database Location
+
+Default database path (configurable in `config.json`):
+
+```
+autopentestx/
+└── database/
+    └── autopentestx.db
+```
+
+## Configuration Options
+
+<ParamField path="database.type" type="string" default="sqlite">
+  Database type (currently only SQLite is supported)
+</ParamField>
+
+<ParamField path="database.path" type="string" default="database/autopentestx.db">
+  Path to SQLite database file (relative or absolute)
+</ParamField>
+
+<ParamField path="database.backup_enabled" type="boolean" default={true}>
+  Enable automatic database backups before modifications
+</ParamField>
+
+<ParamField path="database.retention_days" type="integer" default={90}>
+  Number of days to retain scan data (0 = keep forever)
+</ParamField>
+
+## Database Schema
+
+AutoPentestX creates five main tables to store scan data:
+
+### 1. Scans Table
+
+Stores high-level scan metadata and results.
+
+```sql
+CREATE TABLE scans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    target TEXT NOT NULL,
+    scan_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    os_detection TEXT,
+    scan_duration REAL,
+    total_ports INTEGER,
+    open_ports INTEGER,
+    vulnerabilities_found INTEGER,
+    risk_score TEXT,
+    status TEXT DEFAULT 'completed'
+)
+```
+
+#### Column Descriptions
+
+<ParamField path="id" type="INTEGER">
+  Unique scan identifier (auto-incremented)
+</ParamField>
+
+<ParamField path="target" type="TEXT">
+  Target IP address or domain name
+</ParamField>
+
+<ParamField path="scan_date" type="TIMESTAMP">
+  Timestamp when scan was initiated
+</ParamField>
+
+<ParamField path="os_detection" type="TEXT">
+  Detected operating system from fingerprinting
+</ParamField>
+
+<ParamField path="scan_duration" type="REAL">
+  Total scan duration in seconds
+</ParamField>
+
+<ParamField path="total_ports" type="INTEGER">
+  Total number of ports scanned
+</ParamField>
+
+<ParamField path="open_ports" type="INTEGER">
+  Number of open ports discovered
+</ParamField>
+
+<ParamField path="vulnerabilities_found" type="INTEGER">
+  Total vulnerabilities identified
+</ParamField>
+
+<ParamField path="risk_score" type="TEXT">
+  Overall risk level: CRITICAL, HIGH, MEDIUM, LOW, or INFO
+</ParamField>
+
+<ParamField path="status" type="TEXT">
+  Scan status: `completed`, `in_progress`, `interrupted`, or `failed`
+</ParamField>
+
+### 2. Ports Table
+
+Stores information about discovered ports and services.
+
+```sql
+CREATE TABLE ports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scan_id INTEGER,
+    port_number INTEGER,
+    protocol TEXT,
+    state TEXT,
+    service_name TEXT,
+    service_version TEXT,
+    FOREIGN KEY (scan_id) REFERENCES scans(id)
+)
+```
+
+#### Column Descriptions
+
+<ParamField path="scan_id" type="INTEGER">
+  Foreign key reference to parent scan
+</ParamField>
+
+<ParamField path="port_number" type="INTEGER">
+  Port number (1-65535)
+</ParamField>
+
+<ParamField path="protocol" type="TEXT">
+  Protocol: `tcp` or `udp`
+</ParamField>
+
+<ParamField path="state" type="TEXT">
+  Port state: `open`, `closed`, or `filtered`
+</ParamField>
+
+<ParamField path="service_name" type="TEXT">
+  Detected service name (e.g., `http`, `ssh`, `mysql`)
+</ParamField>
+
+<ParamField path="service_version" type="TEXT">
+  Service version string if detected
+</ParamField>
+
+### 3. Vulnerabilities Table
+
+Stores vulnerability findings and CVE data.
+
+```sql
+CREATE TABLE vulnerabilities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scan_id INTEGER,
+    port_number INTEGER,
+    service_name TEXT,
+    vuln_name TEXT,
+    vuln_description TEXT,
+    cve_id TEXT,
+    cvss_score REAL,
+    risk_level TEXT,
+    exploitable BOOLEAN,
+    FOREIGN KEY (scan_id) REFERENCES scans(id)
+)
+```
+
+#### Column Descriptions
+
+<ParamField path="vuln_name" type="TEXT">
+  Vulnerability name or title
+</ParamField>
+
+<ParamField path="vuln_description" type="TEXT">
+  Detailed description of the vulnerability
+</ParamField>
+
+<ParamField path="cve_id" type="TEXT">
+  CVE identifier (e.g., `CVE-2024-1234`)
+</ParamField>
+
+<ParamField path="cvss_score" type="REAL">
+  CVSS score (0.0 - 10.0)
+</ParamField>
+
+<ParamField path="risk_level" type="TEXT">
+  Risk classification: CRITICAL, HIGH, MEDIUM, LOW, or UNKNOWN
+</ParamField>
+
+<ParamField path="exploitable" type="BOOLEAN">
+  Whether known exploits exist (1 = yes, 0 = no)
+</ParamField>
+
+### 4. Web Vulnerabilities Table
+
+Stores web-specific vulnerabilities from Nikto and SQLMap.
+
+```sql
+CREATE TABLE web_vulnerabilities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scan_id INTEGER,
+    url TEXT,
+    vuln_type TEXT,
+    severity TEXT,
+    description TEXT,
+    FOREIGN KEY (scan_id) REFERENCES scans(id)
+)
+```
+
+#### Column Descriptions
+
+<ParamField path="url" type="TEXT">
+  Full URL where vulnerability was discovered
+</ParamField>
+
+<ParamField path="vuln_type" type="TEXT">
+  Vulnerability type (e.g., `XSS`, `SQL Injection`, `Directory Listing`)
+</ParamField>
+
+<ParamField path="severity" type="TEXT">
+  Severity level: HIGH, MEDIUM, or LOW
+</ParamField>
+
+### 5. Exploits Table
+
+Stores exploitation attempts and results.
+
+```sql
+CREATE TABLE exploits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scan_id INTEGER,
+    vuln_id INTEGER,
+    exploit_name TEXT,
+    exploit_status TEXT,
+    exploit_result TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (scan_id) REFERENCES scans(id),
+    FOREIGN KEY (vuln_id) REFERENCES vulnerabilities(id)
+)
+```
+
+#### Column Descriptions
+
+<ParamField path="vuln_id" type="INTEGER">
+  Foreign key reference to vulnerability being exploited
+</ParamField>
+
+<ParamField path="exploit_name" type="TEXT">
+  Name of exploit module or technique
+</ParamField>
+
+<ParamField path="exploit_status" type="TEXT">
+  Status: `success`, `failed`, or `simulated`
+</ParamField>
+
+<ParamField path="exploit_result" type="TEXT">
+  JSON-encoded exploit result data
+</ParamField>
+
+## Database Operations
+
+The `Database` class in `modules/database.py` provides methods for all database operations:
+
+### Initialization
+
+```python
+from modules.database import Database
+
+# Initialize with default path
+db = Database()
+
+# Or specify custom path
+db = Database(db_path="/custom/path/pentest.db")
+```
+
+### Creating a Scan
+
+```python
+# Insert new scan record
+scan_id = db.insert_scan(
+    target="192.168.1.100",
+    os_detection="Linux 5.x"
+)
+```
+
+### Updating Scan Results
+
+```python
+# Update scan with results
+db.update_scan(
+    scan_id=scan_id,
+    total_ports=65535,
+    open_ports=5,
+    vulnerabilities_found=12,
+    risk_score="HIGH",
+    scan_duration=1234.56,
+    status="completed"
+)
+```
+
+### Inserting Port Data
+
+```python
+port_data = {
+    'port': 80,
+    'protocol': 'tcp',
+    'state': 'open',
+    'service': 'http',
+    'version': 'Apache 2.4.41'
+}
+db.insert_port(scan_id, port_data)
+```
+
+### Inserting Vulnerabilities
+
+```python
+vuln_data = {
+    'port': 80,
+    'service': 'http',
+    'name': 'Outdated Apache Version',
+    'description': 'Apache 2.4.41 has known vulnerabilities',
+    'cve_id': 'CVE-2024-1234',
+    'cvss_score': 7.5,
+    'risk_level': 'HIGH',
+    'exploitable': True
+}
+vuln_id = db.insert_vulnerability(scan_id, vuln_data)
+```
+
+### Retrieving Scan Data
+
+```python
+# Get complete scan data
+scan_data = db.get_scan_data(scan_id)
+
+print(scan_data['scan'])              # Scan metadata
+print(scan_data['ports'])             # All ports
+print(scan_data['vulnerabilities'])   # All vulnerabilities
+print(scan_data['web_vulnerabilities']) # Web vulns
+print(scan_data['exploits'])          # Exploit attempts
+```
+
+### Listing All Scans
+
+```python
+# Get all scans (ordered by date, newest first)
+all_scans = db.get_all_scans()
+
+for scan in all_scans:
+    print(f"Scan ID: {scan[0]}, Target: {scan[1]}, Date: {scan[2]}")
+```
+
+## Querying the Database
+
+You can query the database directly using SQLite tools:
+
+<CodeGroup>
+```bash SQLite CLI
+# Open database with sqlite3
+sqlite3 database/autopentestx.db
+
+# View all scans
+SELECT * FROM scans;
+
+# View vulnerabilities for scan ID 5
+SELECT * FROM vulnerabilities WHERE scan_id = 5;
+
+# Count total vulnerabilities by risk level
+SELECT risk_level, COUNT(*) 
+FROM vulnerabilities 
+GROUP BY risk_level;
+```
+
+```python Python Script
+import sqlite3
+
+# Connect to database
+conn = sqlite3.connect('database/autopentestx.db')
+cursor = conn.cursor()
+
+# Query recent scans
+cursor.execute('''
+    SELECT target, scan_date, risk_score, vulnerabilities_found
+    FROM scans
+    ORDER BY scan_date DESC
+    LIMIT 10
+''')
+
+for row in cursor.fetchall():
+    print(f"Target: {row[0]}, Risk: {row[2]}, Vulns: {row[3]}")
+
+conn.close()
+```
+</CodeGroup>
+
+## Useful SQL Queries
+
+### Find High-Risk Scans
+
+```sql
+SELECT id, target, scan_date, risk_score, vulnerabilities_found
+FROM scans
+WHERE risk_score IN ('CRITICAL', 'HIGH')
+ORDER BY scan_date DESC;
+```
+
+### Get All Vulnerabilities for a Target
+
+```sql
+SELECT v.vuln_name, v.cve_id, v.cvss_score, v.risk_level
+FROM vulnerabilities v
+JOIN scans s ON v.scan_id = s.id
+WHERE s.target = '192.168.1.100'
+ORDER BY v.cvss_score DESC;
+```
+
+### Count Exploitable Vulnerabilities
+
+```sql
+SELECT s.target, COUNT(*) as exploitable_count
+FROM vulnerabilities v
+JOIN scans s ON v.scan_id = s.id
+WHERE v.exploitable = 1
+GROUP BY s.target;
+```
+
+### View Open Ports Across All Scans
+
+```sql
+SELECT s.target, p.port_number, p.service_name, p.service_version
+FROM ports p
+JOIN scans s ON p.scan_id = s.id
+WHERE p.state = 'open'
+ORDER BY s.target, p.port_number;
+```
+
+## Backup and Maintenance
+
+### Manual Backup
+
+```bash
+# Create timestamped backup
+cp database/autopentestx.db database/autopentestx_$(date +%Y%m%d_%H%M%S).db
+```
+
+### Database Cleanup
+
+<Note>
+  The `retention_days` setting automatically removes old scans. Set to `0` to keep all data indefinitely.
+</Note>
+
+```sql
+-- Manually delete scans older than 90 days
+DELETE FROM scans
+WHERE scan_date < datetime('now', '-90 days');
+
+-- Vacuum database to reclaim space
+VACUUM;
+```
+
+### Optimize Database
+
+```sql
+-- Analyze tables for query optimization
+ANALYZE;
+
+-- Rebuild indexes
+REINDEX;
+```
+
+## Data Export
+
+### Export to CSV
+
+```bash
+sqlite3 database/autopentestx.db <<EOF
+.headers on
+.mode csv
+.output scans_export.csv
+SELECT * FROM scans;
+.quit
+EOF
+```
+
+### Export to JSON
+
+```bash
+sqlite3 database/autopentestx.db <<EOF
+.mode json
+.output scan_data.json
+SELECT * FROM scans;
+.quit
+EOF
+```
+
+## Database Connection Management
+
+The Database class automatically:
+- Creates the database file if it doesn't exist
+- Creates all tables on first connection
+- Handles connection errors gracefully
+- Commits transactions after each operation
+
+```python
+# Database class handles connection lifecycle
+db = Database()  # Connects automatically
+
+# Perform operations...
+db.insert_scan(target="192.168.1.1")
+
+# Always close when done
+db.close()
+```
+
+<Warning>
+  Always call `db.close()` when finished to prevent database locks and ensure data integrity.
+</Warning>
+
+## Error Handling
+
+Common database errors and solutions:
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `database is locked` | Multiple processes accessing database | Close other connections, wait and retry |
+| `unable to open database file` | Incorrect path or permissions | Check path and file permissions |
+| `no such table` | Tables not created | Ensure `create_tables()` was called |
+| `FOREIGN KEY constraint failed` | Invalid reference ID | Verify parent record exists |
+
+## Related Resources
+
+- [Configuration Settings](/configuration/settings) - Configure database path and retention
+- [Scan Options](/configuration/scan-options) - CLI flags that affect database storage
+- [Architecture Overview](/core-concepts/architecture) - How database fits into AutoPentestX

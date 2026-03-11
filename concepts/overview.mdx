@@ -1,0 +1,245 @@
+---
+title: 'Overview'
+description: 'Understanding AutoPentestX architecture and core capabilities'
+icon: 'book-open'
+---
+
+AutoPentestX is a complete, automated penetration testing toolkit that orchestrates multiple security tools and methodologies into a single, streamlined workflow. Built for educational purposes and authorized security assessments, it combines network reconnaissance, vulnerability detection, risk analysis, and exploitation simulation.
+
+## What is AutoPentestX?
+
+AutoPentestX is a Python-based CLI tool that automates the entire penetration testing lifecycle—from initial network scanning through final report generation. It integrates industry-standard tools (Nmap, Nikto, SQLMap, Metasploit) with custom risk assessment and exploitation engines.
+
+<Note>
+AutoPentestX is designed for **authorized testing only**. Always obtain written permission before scanning any system you don't own.
+</Note>
+
+## Core Architecture
+
+The tool is built around a modular architecture with eight specialized modules:
+
+### Main Orchestrator
+
+The `AutoPentestX` class in `main.py:27` serves as the central orchestrator:
+
+```python
+class AutoPentestX:
+    def __init__(self, target, tester_name="AutoPentestX Team", 
+                 safe_mode=True, skip_web=False, skip_exploit=False):
+        self.target = target
+        self.safe_mode = safe_mode
+        self.db = Database()
+        # Initialize modules...
+```
+
+### Module Structure
+
+<Steps>
+  <Step title="Database Module">
+    SQLite-based persistence layer storing all scan results, vulnerabilities, and exploits for historical analysis
+  </Step>
+  
+  <Step title="Scanner Module">
+    Nmap integration for comprehensive port scanning, service detection, OS fingerprinting, and banner grabbing
+  </Step>
+  
+  <Step title="Vulnerability Scanner">
+    Nikto and SQLMap integration for web vulnerability detection and SQL injection testing
+  </Step>
+  
+  <Step title="CVE Lookup Module">
+    Automated CVE database queries to identify known vulnerabilities in detected services
+  </Step>
+  
+  <Step title="Risk Engine">
+    CVSS-based risk scoring that calculates overall system risk from multiple vulnerability factors
+  </Step>
+  
+  <Step title="Exploit Engine">
+    Metasploit integration with safe-mode exploitation simulation (see `exploit_engine.py:14`)
+  </Step>
+  
+  <Step title="PDF Report Generator">
+    Professional report generation with executive summaries, findings, and remediation recommendations
+  </Step>
+</Steps>
+
+## Key Features
+
+### Automated Workflow
+
+Single-command execution that runs all seven phases automatically:
+
+```bash
+python main.py -t 192.168.1.100
+```
+
+No manual intervention required—the tool handles the entire assessment from start to finish.
+
+### Safe Mode by Default
+
+As implemented in `exploit_engine.py:15`, safe mode is **enabled by default**:
+
+```python
+class ExploitEngine:
+    def __init__(self, safe_mode=True):
+        self.safe_mode = safe_mode
+```
+
+This prevents destructive actions and ensures exploitation is simulated rather than executed.
+
+### Comprehensive Data Storage
+
+All results are stored in a SQLite database with five normalized tables:
+
+- `scans` - Scan metadata and timing
+- `ports` - Open port information
+- `vulnerabilities` - Detected vulnerabilities
+- `web_vulnerabilities` - Web-specific issues
+- `exploits` - Exploitation attempts
+
+### Professional Reporting
+
+Generates publication-ready PDF reports including:
+
+- Executive summary
+- Technical findings
+- Risk assessment
+- Exploitation results
+- Prioritized remediation steps
+
+## Technical Stack
+
+<CardGroup cols={2}>
+  <Card title="Core Language" icon="python">
+    Python 3.8+ with modern async/await patterns
+  </Card>
+  
+  <Card title="Network Scanning" icon="radar">
+    Nmap for port scanning and service detection
+  </Card>
+  
+  <Card title="Web Testing" icon="globe">
+    Nikto and SQLMap for web vulnerability assessment
+  </Card>
+  
+  <Card title="Exploitation" icon="shield">
+    Metasploit Framework integration (optional)
+  </Card>
+</CardGroup>
+
+## Dependencies
+
+```python
+# Core Python packages
+python-nmap==0.7.1      # Nmap integration
+requests>=2.31.0        # HTTP/API requests
+reportlab>=4.0.4        # PDF generation
+sqlparse>=0.4.4         # SQL parsing
+```
+
+```bash
+# System tools
+sudo apt install nmap nikto sqlmap metasploit-framework
+```
+
+## Design Philosophy
+
+### Education First
+
+AutoPentestX is designed as an educational tool that demonstrates penetration testing methodologies in a safe, controlled manner. Every run displays legal warnings and requires authorization confirmation.
+
+### Safety by Design
+
+Multiple safety mechanisms protect against accidental damage:
+
+- Safe mode enabled by default
+- Authorization prompts before execution
+- Non-destructive scanning techniques
+- Simulation-only exploitation
+- Comprehensive logging for audit trails
+
+### Professional Output
+
+Generated reports meet professional standards suitable for:
+
+- Academic projects and coursework
+- Security audit documentation
+- Client deliverables (authorized testing)
+- Bug bounty submissions
+- Red team exercises
+
+## Performance Characteristics
+
+<Info>
+**Typical scan times:**
+- Quick scan (ports only): 5-10 minutes
+- Standard scan (with web): 10-20 minutes  
+- Full assessment: 20-30 minutes
+</Info>
+
+Resource usage is moderate:
+
+- **CPU**: High during Nmap scanning phase
+- **Memory**: ~100-200 MB typical
+- **Disk**: ~50 MB for installation
+- **Network**: High traffic during active scanning
+
+## Extensibility
+
+The modular architecture allows easy extension:
+
+```python
+# Add new vulnerability checks
+class CustomScanner:
+    def scan(self, target):
+        # Your custom logic
+        return results
+
+# Integrate into workflow
+vuln_scanner.add_scanner(CustomScanner())
+```
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Security Labs" icon="flask">
+    Practice penetration testing in controlled VM environments
+  </Card>
+  
+  <Card title="Security Audits" icon="clipboard-check">
+    Authorized vulnerability assessments for clients
+  </Card>
+  
+  <Card title="Bug Bounties" icon="bug">
+    Reconnaissance for authorized bug bounty programs
+  </Card>
+  
+  <Card title="CTF Competitions" icon="flag">
+    Quick reconnaissance for capture-the-flag events
+  </Card>
+</CardGroup>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="7-Phase Workflow" icon="arrow-progress" href="/concepts/workflow">
+    Learn about the complete assessment process
+  </Card>
+  
+  <Card title="Safe Mode" icon="shield-check" href="/concepts/safe-mode">
+    Understand safe vs unsafe exploitation
+  </Card>
+  
+  <Card title="Legal & Ethics" icon="scale-balanced" href="/concepts/legal-ethical">
+    Critical legal requirements and ethical guidelines
+  </Card>
+  
+  <Card title="Quick Start" icon="rocket" href="/getting-started/installation">
+    Start using AutoPentestX in 5 minutes
+  </Card>
+</CardGroup>
+
+<Warning>
+Never use AutoPentestX on systems without explicit written authorization. Unauthorized access is illegal and can result in criminal prosecution.
+</Warning>

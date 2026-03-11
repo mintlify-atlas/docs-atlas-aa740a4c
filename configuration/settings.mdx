@@ -1,0 +1,365 @@
+---
+title: 'Configuration Settings'
+description: 'Complete reference for config.json configuration file'
+icon: 'gear'
+---
+
+# Configuration Settings
+
+AutoPentestX uses a centralized `config.json` file to manage all tool settings, scanning parameters, and behavior options. This file is located in the root directory of the application.
+
+## Configuration File Location
+
+```
+autopentestx/
+└── config.json
+```
+
+## Application Metadata
+
+<ParamField path="app_name" type="string" default="AutoPentestX">
+  Application name displayed in reports and output
+</ParamField>
+
+<ParamField path="version" type="string" default="1.0.0">
+  Current version of AutoPentestX
+</ParamField>
+
+<ParamField path="description" type="string">
+  Application description for documentation and reports
+</ParamField>
+
+## Scan Settings
+
+Core scanning behavior and network reconnaissance parameters.
+
+<ParamField path="scan_settings.default_safe_mode" type="boolean" default={true}>
+  Enable safe mode by default to prevent aggressive scanning
+</ParamField>
+
+<ParamField path="scan_settings.timeout" type="integer" default={300}>
+  Scan timeout in seconds (5 minutes)
+</ParamField>
+
+<ParamField path="scan_settings.max_ports" type="integer" default={65535}>
+  Maximum port range to scan (1-65535)
+</ParamField>
+
+### Scan Techniques
+
+<ParamField path="scan_settings.scan_techniques.tcp_scan" type="boolean" default={true}>
+  Enable TCP port scanning
+</ParamField>
+
+<ParamField path="scan_settings.scan_techniques.udp_scan" type="boolean" default={true}>
+  Enable UDP port scanning
+</ParamField>
+
+<ParamField path="scan_settings.scan_techniques.service_detection" type="boolean" default={true}>
+  Enable service version detection
+</ParamField>
+
+<ParamField path="scan_settings.scan_techniques.os_detection" type="boolean" default={true}>
+  Enable operating system fingerprinting
+</ParamField>
+
+<ParamField path="scan_settings.scan_techniques.version_detection" type="boolean" default={true}>
+  Enable detailed version detection for services
+</ParamField>
+
+## Vulnerability Scanning
+
+Settings for web vulnerability scanners (Nikto, SQLMap).
+
+<ParamField path="vulnerability_scanning.nikto_enabled" type="boolean" default={true}>
+  Enable Nikto web server scanner
+</ParamField>
+
+<ParamField path="vulnerability_scanning.sqlmap_enabled" type="boolean" default={true}>
+  Enable SQLMap for SQL injection testing
+</ParamField>
+
+<ParamField path="vulnerability_scanning.nikto_timeout" type="integer" default={300}>
+  Nikto scan timeout in seconds
+</ParamField>
+
+<ParamField path="vulnerability_scanning.sqlmap_timeout" type="integer" default={180}>
+  SQLMap scan timeout in seconds
+</ParamField>
+
+<ParamField path="vulnerability_scanning.max_web_crawl_depth" type="integer" default={2}>
+  Maximum depth for web crawling during vulnerability assessment
+</ParamField>
+
+<Warning>
+  Web vulnerability scanning can be time-consuming. Use `--skip-web` flag to bypass these scans when not needed.
+</Warning>
+
+## CVE Lookup
+
+Configuration for CVE (Common Vulnerabilities and Exposures) database queries.
+
+<ParamField path="cve_lookup.enabled" type="boolean" default={true}>
+  Enable automatic CVE lookups for detected services
+</ParamField>
+
+<ParamField path="cve_lookup.api_url" type="string" default="https://cve.circl.lu/api">
+  Primary CVE API endpoint
+</ParamField>
+
+<ParamField path="cve_lookup.nvd_api_url" type="string" default="https://services.nvd.nist.gov/rest/json/cves/2.0">
+  NIST National Vulnerability Database API endpoint
+</ParamField>
+
+<ParamField path="cve_lookup.max_results_per_service" type="integer" default={10}>
+  Maximum number of CVE results to retrieve per service
+</ParamField>
+
+<ParamField path="cve_lookup.cache_results" type="boolean" default={true}>
+  Cache CVE results to improve performance on repeated scans
+</ParamField>
+
+## Exploitation Settings
+
+Controls for exploit simulation and Metasploit integration.
+
+<ParamField path="exploitation.safe_mode_default" type="boolean" default={true}>
+  Enable safe mode for exploitation (simulation only)
+</ParamField>
+
+<ParamField path="exploitation.metasploit_enabled" type="boolean" default={true}>
+  Enable Metasploit Framework integration
+</ParamField>
+
+<ParamField path="exploitation.max_exploit_attempts" type="integer" default={5}>
+  Maximum number of exploit attempts per vulnerability
+</ParamField>
+
+<ParamField path="exploitation.generate_rc_scripts" type="boolean" default={true}>
+  Generate Metasploit resource scripts for manual exploitation
+</ParamField>
+
+<Warning>
+  Exploitation should ONLY be performed on authorized systems. Safe mode is enabled by default and highly recommended.
+</Warning>
+
+## Risk Scoring
+
+Risk assessment thresholds and weighting factors.
+
+### CVSS Thresholds
+
+<ParamField path="risk_scoring.cvss_thresholds.critical" type="float" default={9.0}>
+  Minimum CVSS score for CRITICAL severity (9.0-10.0)
+</ParamField>
+
+<ParamField path="risk_scoring.cvss_thresholds.high" type="float" default={7.0}>
+  Minimum CVSS score for HIGH severity (7.0-8.9)
+</ParamField>
+
+<ParamField path="risk_scoring.cvss_thresholds.medium" type="float" default={4.0}>
+  Minimum CVSS score for MEDIUM severity (4.0-6.9)
+</ParamField>
+
+<ParamField path="risk_scoring.cvss_thresholds.low" type="float" default={0.1}>
+  Minimum CVSS score for LOW severity (0.1-3.9)
+</ParamField>
+
+### Weight Factors
+
+<ParamField path="risk_scoring.weight_factors.exploitable" type="float" default={2.0}>
+  Risk multiplier for exploitable vulnerabilities (2x)
+</ParamField>
+
+<ParamField path="risk_scoring.weight_factors.public_exploit" type="float" default={1.5}>
+  Risk multiplier when public exploits exist (1.5x)
+</ParamField>
+
+<ParamField path="risk_scoring.weight_factors.network_accessible" type="float" default={1.3}>
+  Risk multiplier for network-accessible services (1.3x)
+</ParamField>
+
+<ParamField path="risk_scoring.weight_factors.authenticated" type="float" default={0.7}>
+  Risk reducer for vulnerabilities requiring authentication (0.7x)
+</ParamField>
+
+## Reporting
+
+Report generation settings and output formats.
+
+<ParamField path="reporting.format" type="string" default="pdf">
+  Default report format (pdf, html, json)
+</ParamField>
+
+<ParamField path="reporting.generate_json" type="boolean" default={true}>
+  Generate JSON output alongside PDF report
+</ParamField>
+
+<ParamField path="reporting.include_screenshots" type="boolean" default={false}>
+  Include screenshots in reports (requires additional tools)
+</ParamField>
+
+<ParamField path="reporting.confidential_watermark" type="boolean" default={true}>
+  Add "CONFIDENTIAL" watermark to PDF reports
+</ParamField>
+
+<ParamField path="reporting.default_tester_name" type="string" default="AutoPentestX Team">
+  Default tester name for reports (can be overridden with `-n` flag)
+</ParamField>
+
+## Database Configuration
+
+<ParamField path="database.type" type="string" default="sqlite">
+  Database type (currently only SQLite is supported)
+</ParamField>
+
+<ParamField path="database.path" type="string" default="database/autopentestx.db">
+  Path to SQLite database file
+</ParamField>
+
+<ParamField path="database.backup_enabled" type="boolean" default={true}>
+  Enable automatic database backups
+</ParamField>
+
+<ParamField path="database.retention_days" type="integer" default={90}>
+  Number of days to retain scan data before cleanup
+</ParamField>
+
+<Note>
+  See [Database Configuration](/configuration/database) for detailed schema information.
+</Note>
+
+## Logging
+
+Application logging configuration.
+
+<ParamField path="logging.enabled" type="boolean" default={true}>
+  Enable application logging
+</ParamField>
+
+<ParamField path="logging.level" type="string" default="INFO">
+  Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+</ParamField>
+
+<ParamField path="logging.log_dir" type="string" default="logs">
+  Directory for log files
+</ParamField>
+
+<ParamField path="logging.max_log_size_mb" type="integer" default={10}>
+  Maximum log file size in megabytes before rotation
+</ParamField>
+
+<ParamField path="logging.backup_count" type="integer" default={5}>
+  Number of rotated log files to keep
+</ParamField>
+
+## Output Directories
+
+Default directories for various output types.
+
+<ParamField path="output.reports_dir" type="string" default="reports">
+  Directory for generated reports
+</ParamField>
+
+<ParamField path="output.logs_dir" type="string" default="logs">
+  Directory for application logs
+</ParamField>
+
+<ParamField path="output.database_dir" type="string" default="database">
+  Directory for database files
+</ParamField>
+
+<ParamField path="output.exploits_dir" type="string" default="exploits">
+  Directory for generated exploit scripts
+</ParamField>
+
+## Network Settings
+
+HTTP client configuration for web requests.
+
+<ParamField path="network.user_agent" type="string" default="Mozilla/5.0 (AutoPentestX Security Scanner)">
+  User-Agent header for HTTP requests
+</ParamField>
+
+<ParamField path="network.request_timeout" type="integer" default={30}>
+  HTTP request timeout in seconds
+</ParamField>
+
+<ParamField path="network.max_retries" type="integer" default={3}>
+  Maximum number of retries for failed requests
+</ParamField>
+
+<ParamField path="network.rate_limit_delay" type="integer" default={1}>
+  Delay in seconds between requests to avoid rate limiting
+</ParamField>
+
+## Example Configuration
+
+<CodeGroup>
+```json config.json
+{
+  "app_name": "AutoPentestX",
+  "version": "1.0.0",
+  "description": "Automated Penetration Testing & Vulnerability Assessment Toolkit",
+  
+  "scan_settings": {
+    "default_safe_mode": true,
+    "timeout": 300,
+    "max_ports": 65535,
+    "scan_techniques": {
+      "tcp_scan": true,
+      "udp_scan": true,
+      "service_detection": true,
+      "os_detection": true,
+      "version_detection": true
+    }
+  },
+  
+  "vulnerability_scanning": {
+    "nikto_enabled": true,
+    "sqlmap_enabled": true,
+    "nikto_timeout": 300,
+    "sqlmap_timeout": 180,
+    "max_web_crawl_depth": 2
+  },
+  
+  "risk_scoring": {
+    "cvss_thresholds": {
+      "critical": 9.0,
+      "high": 7.0,
+      "medium": 4.0,
+      "low": 0.1
+    },
+    "weight_factors": {
+      "exploitable": 2.0,
+      "public_exploit": 1.5,
+      "network_accessible": 1.3,
+      "authenticated": 0.7
+    }
+  },
+  
+  "database": {
+    "type": "sqlite",
+    "path": "database/autopentestx.db",
+    "backup_enabled": true,
+    "retention_days": 90
+  }
+}
+```
+</CodeGroup>
+
+## Modifying Configuration
+
+1. Edit the `config.json` file in the root directory
+2. Validate JSON syntax before saving
+3. Restart AutoPentestX for changes to take effect
+
+<Warning>
+  Invalid JSON will cause AutoPentestX to fail at startup. Always validate your configuration file after making changes.
+</Warning>
+
+## Related Resources
+
+- [Scan Options](/configuration/scan-options) - CLI flags and runtime options
+- [Database Configuration](/configuration/database) - Database schema and queries
+- [Quick Start Guide](/getting-started/quick-start) - Get started with AutoPentestX

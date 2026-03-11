@@ -1,0 +1,294 @@
+---
+title: 'Running Your First Scan'
+description: 'Learn how to perform a basic penetration test with AutoPentestX'
+icon: 'play'
+---
+
+This guide walks you through running your first penetration test with AutoPentestX. You'll learn the essential commands and what to expect during a basic scan.
+
+## Prerequisites
+
+Before running a scan, ensure you have:
+
+<Check>
+  Completed the installation process
+</Check>
+<Check>
+  Activated the virtual environment
+</Check>
+<Check>
+  Obtained written authorization to test the target system
+</Check>
+
+<Warning>
+  **Legal Requirement**: You MUST have explicit written authorization before scanning any target. Unauthorized access to computer systems is a federal crime.
+</Warning>
+
+## Basic Scan Command
+
+The simplest way to run a scan is with the `-t` (target) flag:
+
+<CodeGroup>
+
+```bash Basic Scan
+python3 main.py -t 192.168.1.100
+```
+
+```bash Scan a Domain
+python3 main.py -t example.com
+```
+
+```bash Localhost Testing
+python3 main.py -t 127.0.0.1
+```
+
+</CodeGroup>
+
+## Authorization Prompt
+
+When you run AutoPentestX, you'll see a legal warning prompt:
+
+```text Terminal Output
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+⚠️  [LEGAL WARNING] - AUTHORIZATION REQUIRED ⚠️
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+
+╔══════════════════════════════════════════════════════════════════╗
+║ You are about to deploy an automated penetration testing tool.  ║
+║ This weapon should ONLY be used on:                             ║
+║   • Systems you own                                             ║
+║   • Systems with explicit written authorization                 ║
+║                                                                 ║
+║ Unauthorized system access = FEDERAL CRIME                      ║
+║ Punishment: Fines + Imprisonment                                ║
+╚══════════════════════════════════════════════════════════════════╝
+
+> Do you have authorization to test this target? (yes/no):
+```
+
+Type `yes` to proceed with the scan.
+
+## Understanding the Scan Phases
+
+A basic scan runs through 7 phases automatically:
+
+<Steps>
+
+<Step title="Database Initialization">
+  AutoPentestX creates a unique scan ID and initializes the SQLite database to store results.
+
+  ```text
+  [PHASE 1] ▶ Initializing attack sequence...
+  [✓] Mission ID: 1 | Status: ACTIVE
+  ```
+</Step>
+
+<Step title="Network Reconnaissance">
+  Nmap performs a comprehensive port scan to discover open ports and services.
+
+  ```text
+  [PHASE 2] ▶ Network reconnaissance in progress...
+  [✓] Phase 2 complete - 15 ports discovered
+  ```
+</Step>
+
+<Step title="Vulnerability Analysis">
+  Nikto and SQLMap scan web services for common vulnerabilities.
+
+  ```text
+  [PHASE 3] ▶ Vulnerability analysis initiated...
+  [✓] Detected web service: http://192.168.1.100:80
+  [*] Running Nikto scan on http://192.168.1.100:80...
+  [✓] Nikto scan completed: 7 vulnerabilities found
+  ```
+</Step>
+
+<Step title="CVE Intelligence Lookup">
+  Matches detected services against the CVE database for known vulnerabilities.
+
+  ```text
+  [PHASE 4] ▶ Accessing CVE intelligence database...
+  [*] Checking CVE database for: Apache 2.4.41
+  [✓] CVE lookup completed: 3 CVEs identified
+  ```
+</Step>
+
+<Step title="Risk Assessment">
+  Calculates overall risk scores and prioritizes findings.
+
+  ```text
+  [PHASE 5] ▶ Computing threat matrix...
+  [*] Calculating risk scores for 15 findings...
+  [✓] Risk assessment complete - Overall risk: MEDIUM
+  ```
+</Step>
+
+<Step title="Exploitation Simulation">
+  Identifies potential exploits and generates Metasploit resource scripts (safe mode enabled by default).
+
+  ```text
+  [PHASE 6] ▶ Exploit simulation [SAFE MODE]...
+  [*] Running in SAFE MODE - No actual exploitation will occur
+  [✓] Metasploit RC script saved: exploits/exploit_192.168.1.100_21_20240311_143022.rc
+  ```
+</Step>
+
+<Step title="Report Generation">
+  Compiles all findings into a professional PDF report.
+
+  ```text
+  [PHASE 7] ▶ Compiling classified intelligence report...
+  [*] Building PDF document...
+  [✓] Report saved to: reports/AutoPentestX_Report_192_168_1_100_20240311_143045.pdf
+  ```
+</Step>
+
+</Steps>
+
+## Scan Completion Summary
+
+After all phases complete, you'll see a mission summary:
+
+```text Terminal Output
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+█████████████████ MISSION COMPLETE █████████████████
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+
+╔══════════════════════════════════════════════════════════════════╗
+║ [OPERATION SUMMARY]                                            ║
+╠══════════════════════════════════════════════════════════════════╣
+║ ► Target: 192.168.1.100
+║ ► Mission ID: 1
+║ ► Duration: 1247.23s (20.79 min)
+║ ► Timestamp: 2026-03-11 14:30:45
+╚══════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════╗
+║ [INTELLIGENCE GATHERED]                                       ║
+╠══════════════════════════════════════════════════════════════════╣
+║ ► Open Ports: 15
+║ ► Services Detected: 12
+║ ► Total Vulnerabilities: 23
+║ ► Web Vulnerabilities: 7
+║ ► SQL Injection Points: 0
+║ ► CVEs Identified: 3
+║ ► Overall Risk Level: MEDIUM
+║ ► Risk Score: 45.80
+╚══════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════╗
+║ [CLASSIFIED DATA STORAGE]                                     ║
+╠══════════════════════════════════════════════════════════════════╣
+║ ► PDF Report: reports/AutoPentestX_Report_192_168_1_100_20240311_143045.pdf
+║ ► Database: database/autopentestx.db
+║ ► Logs: logs/
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+## Customizing Your Scan
+
+### Add Your Name to the Report
+
+Include your name in the generated PDF report:
+
+```bash
+python3 main.py -t 192.168.1.100 -n "Jane Smith"
+```
+
+### Quick Scan (Skip Web Vulnerabilities)
+
+Speed up scans by skipping Nikto and SQLMap:
+
+```bash
+python3 main.py -t 192.168.1.100 --skip-web
+```
+
+<Tip>
+  Using `--skip-web` reduces scan time from 20-30 minutes to 10-20 minutes.
+</Tip>
+
+## Viewing Your Results
+
+### PDF Report
+
+Open the generated PDF report:
+
+```bash
+xdg-open reports/AutoPentestX_Report_*.pdf
+```
+
+The report contains:
+- Executive summary with overall risk assessment
+- Complete port and service inventory
+- Detailed vulnerability findings
+- CVE mappings with CVSS scores
+- Exploitation feasibility analysis
+- Prioritized remediation recommendations
+
+### Database Query
+
+Query the SQLite database for specific information:
+
+```bash
+sqlite3 database/autopentestx.db "SELECT * FROM scans;"
+```
+
+### Logs
+
+Check detailed execution logs:
+
+```bash
+ls -lh logs/
+cat logs/nikto_192.168.1.100_*.json
+```
+
+## Common Issues
+
+<AccordionGroup>
+
+<Accordion title="Permission Denied Errors">
+  Some scans require root privileges:
+
+  ```bash
+  sudo python3 main.py -t 192.168.1.100
+  ```
+
+  <Warning>
+    Always activate the virtual environment first, even with sudo.
+  </Warning>
+</Accordion>
+
+<Accordion title="Scan Timeout">
+  If scanning takes too long, interrupt with `Ctrl+C`:
+
+  ```text
+  [!] MISSION ABORT - Operator initiated shutdown
+  ```
+
+  The scan status will be marked as 'interrupted' in the database.
+</Accordion>
+
+<Accordion title="Missing Tools Error">
+  Ensure all dependencies are installed:
+
+  ```bash
+  sudo apt-get install nmap nikto sqlmap
+  pip install -r requirements.txt
+  ```
+</Accordion>
+
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+
+<Card title="Advanced Scanning" icon="rocket" href="/guides/advanced-scanning">
+  Learn about advanced flags and performance tuning
+</Card>
+
+<Card title="Understanding Reports" icon="file-pdf" href="/guides/reports">
+  Deep dive into PDF report structure and interpretation
+</Card>
+
+</CardGroup>

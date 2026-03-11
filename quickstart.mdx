@@ -1,80 +1,469 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get started with AutoPentestX in minutes. Learn the essential commands and workflows for your first penetration test.
 ---
 
-## Get started in three steps
+## Your First Scan
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through running your first security assessment with AutoPentestX.
 
-### Step 1: Set up your local environment
+<Warning>
+**CRITICAL**: Only scan systems you own or have explicit written authorization to test. Unauthorized scanning is illegal.
+</Warning>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+## Quick Start Sequence
 
-### Step 2: Deploy your changes
+<Steps>
+  <Step title="Enter the Project Directory">
+    Navigate to the AutoPentestX installation:
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    ```bash
+    cd AutoPentestX
+    ```
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Activate Virtual Environment">
+    Activate the Python virtual environment:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```bash
+    source venv/bin/activate
+    ```
 
-### Step 3: Go live
+    You should see `(venv)` in your terminal prompt.
+  </Step>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+  <Step title="Launch Your First Scan">
+    Run a basic scan on localhost (safe for testing):
 
-## Next steps
+    ```bash
+    python3 main.py -t 127.0.0.1 --skip-web --skip-exploit
+    ```
 
-Now that you have your docs running, explore these key features:
+    This performs a quick reconnaissance scan without web testing or exploitation.
+  </Step>
 
-<CardGroup cols={2}>
+  <Step title="Review the Results">
+    When the scan completes, check the generated report:
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+    ```bash
+    # List reports
+    ls -lh reports/
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+    # Open the PDF report
+    xdg-open reports/AutoPentestX_Report_*.pdf
+    ```
+  </Step>
+</Steps>
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+## Command Reference
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+### Basic Usage
 
-</CardGroup>
+```bash
+python3 main.py -t <target> [options]
+```
+
+### Essential Options
+
+| Option | Description | Example |
+|--------|-------------|----------|
+| `-t, --target` | Target IP or domain **(required)** | `-t 192.168.1.100` |
+| `-n, --tester-name` | Your name for the report | `-n "John Doe"` |
+| `--skip-web` | Skip Nikto and SQLMap scans | `--skip-web` |
+| `--skip-exploit` | Skip exploitation phase | `--skip-exploit` |
+| `--no-safe-mode` | Disable safety protections | `--no-safe-mode` |
+| `--help` | Show help message | `--help` |
+| `--version` | Show version info | `--version` |
+
+## Common Scanning Scenarios
+
+<CodeGroup>
+
+```bash Full Assessment
+# Complete penetration test with all modules
+python3 main.py -t 192.168.1.100
+```
+
+```bash Quick Recon
+# Fast network scan only (5-10 minutes)
+python3 main.py -t 192.168.1.100 --skip-web --skip-exploit
+```
+
+```bash Web Testing
+# Network scan + web vulnerabilities (10-20 minutes)
+python3 main.py -t 192.168.1.100 --skip-exploit
+```
+
+```bash Custom Operator
+# Set custom tester name in report
+python3 main.py -t 192.168.1.100 -n "Security Auditor"
+```
+
+```bash Using Wrapper Script
+# Alternative: use the convenience wrapper
+./autopentestx.sh 192.168.1.100
+```
+
+</CodeGroup>
+
+## Scan Modes Explained
+
+### Mode 1: Lightning Strike (5-10 min)
+
+**Use case**: Quick reconnaissance for initial assessment
+
+```bash
+python3 main.py -t TARGET --skip-web --skip-exploit
+```
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+**Performs**: Port scanning, service detection, OS fingerprinting  
+**Skips**: Web testing, SQL injection, exploitation  
+**Best for**: Rapid network mapping, time-sensitive assessments
 </Note>
+
+### Mode 2: Tactical Assault (10-20 min)
+
+**Use case**: Standard vulnerability assessment without exploitation
+
+```bash
+python3 main.py -t TARGET --skip-exploit
+```
+
+<Note>
+**Performs**: Full network scan, Nikto web testing, SQLMap injection testing, CVE lookup  
+**Skips**: Exploit simulation  
+**Best for**: Vulnerability discovery, compliance scanning
+</Note>
+
+### Mode 3: Total Assessment (20-30+ min)
+
+**Use case**: Complete penetration test with exploit matching
+
+```bash
+python3 main.py -t TARGET
+```
+
+<Note>
+**Performs**: All scanning + Metasploit exploit matching and RC script generation  
+**Skips**: Nothing (full assessment)  
+**Best for**: Comprehensive security audits, red team exercises
+</Note>
+
+## Understanding the Output
+
+AutoPentestX creates multiple outputs during each scan:
+
+### Console Output
+
+The tool displays real-time progress through 7 phases:
+
+```bash
+╔══════════════════════════════════════════════════════════════════╗
+║ [PHASE 1] ▶ Initializing attack sequence...                     ║
+╚══════════════════════════════════════════════════════════════════╝
+[✓] Mission ID: 1 | Status: ACTIVE
+
+╔══════════════════════════════════════════════════════════════════╗
+║ [PHASE 2] ▶ Network reconnaissance in progress...               ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+### Final Summary
+
+When complete, you'll see a mission summary:
+
+```bash
+╔══════════════════════════════════════════════════════════════════╗
+║ [OPERATION SUMMARY]                                              ║
+╠══════════════════════════════════════════════════════════════════╣
+║ ► Target: 192.168.1.100
+║ ► Mission ID: 1
+║ ► Duration: 847.23s (14.12 min)
+║ ► Open Ports: 5
+║ ► Total Vulnerabilities: 12
+║ ► Overall Risk Level: HIGH
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+### Generated Files
+
+<CardGroup cols={2}>
+  <Card title="PDF Report" icon="file-pdf">
+    **Location**: `reports/AutoPentestX_Report_<timestamp>.pdf`
+    
+    Professional report with:
+    - Executive summary
+    - Vulnerability details
+    - Risk assessment
+    - Remediation steps
+  </Card>
+
+  <Card title="SQLite Database" icon="database">
+    **Location**: `database/autopentestx.db`
+    
+    Complete scan data:
+    - Scan history
+    - Port information
+    - Vulnerability records
+    - Exploit attempts
+  </Card>
+
+  <Card title="Execution Logs" icon="file-lines">
+    **Location**: `logs/`
+    
+    Detailed logs:
+    - Scan timestamps
+    - Tool output
+    - Error messages
+    - Debug traces
+  </Card>
+
+  <Card title="Exploit Scripts" icon="code">
+    **Location**: `exploits/`
+    
+    Metasploit RC files:
+    - Matched exploits
+    - Attack vectors
+    - Manual testing scripts
+  </Card>
+</CardGroup>
+
+## Accessing Report Data
+
+### View PDF Report
+
+```bash
+# List all reports
+ls reports/
+
+# Open latest report (Linux)
+xdg-open reports/AutoPentestX_Report_*.pdf
+```
+
+### Query Database
+
+```bash
+# Open database
+sqlite3 database/autopentestx.db
+
+# View all scans
+SELECT * FROM scans;
+
+# View vulnerabilities from latest scan
+SELECT * FROM vulnerabilities WHERE scan_id = 1;
+
+# Exit
+.quit
+```
+
+### Check Logs
+
+```bash
+# List log files
+ls logs/
+
+# View latest log
+tail -f logs/*.log
+```
+
+## Example Workflow
+
+Here's a complete operation from start to finish:
+
+<Steps>
+  <Step title="Prepare">
+    ```bash
+    cd AutoPentestX
+    source venv/bin/activate
+    ```
+  </Step>
+
+  <Step title="Execute Scan">
+    ```bash
+    python3 main.py -t 192.168.1.100 -n "Security Team"
+    ```
+    
+    You'll be prompted to confirm authorization:
+    ```
+    > Do you have authorization to test this target? (yes/no): yes
+    ```
+  </Step>
+
+  <Step title="Monitor Progress">
+    Watch the 7 phases execute:
+    - Phase 1: Initialization
+    - Phase 2: Network Reconnaissance  
+    - Phase 3: Vulnerability Analysis
+    - Phase 4: CVE Intelligence
+    - Phase 5: Risk Assessment
+    - Phase 6: Exploit Simulation
+    - Phase 7: Report Generation
+  </Step>
+
+  <Step title="Review Results">
+    ```bash
+    # Open the PDF report
+    xdg-open reports/AutoPentestX_Report_*.pdf
+    
+    # Query specific data
+    sqlite3 database/autopentestx.db "SELECT * FROM scans;"
+    ```
+  </Step>
+
+  <Step title="Clean Up">
+    ```bash
+    # Deactivate virtual environment
+    deactivate
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Permission Errors
+
+Many scanning operations require root privileges:
+
+```bash
+# Run with sudo
+sudo python3 main.py -t TARGET
+```
+
+<Warning>
+When using sudo, make sure to activate the virtual environment first, or use the full path to the Python interpreter in the venv.
+</Warning>
+
+### Virtual Environment Not Activated
+
+If you see module import errors:
+
+```bash
+# Activate the environment
+source venv/bin/activate
+
+# Verify activation (should show venv path)
+which python3
+
+# Reinstall if needed
+pip install -r requirements.txt
+```
+
+### Missing Tools
+
+If Nmap, Nikto, or SQLMap are not found:
+
+```bash
+# Verify tools are installed
+which nmap nikto sqlmap
+
+# Reinstall missing tools
+sudo apt-get install nmap nikto sqlmap
+```
+
+### Report Generation Failed
+
+If PDF generation fails:
+
+```bash
+# Upgrade reportlab
+pip install --upgrade reportlab pillow
+
+# Verify installation
+python3 -c "from reportlab.lib.pagesizes import letter; print('OK')"
+```
+
+### Metasploit Errors
+
+If you see Metasploit-related errors:
+
+```bash
+# Skip exploitation if Metasploit not installed
+python3 main.py -t TARGET --skip-exploit
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Before Scanning" icon="clipboard-check">
+    ✅ Obtain written authorization  
+    ✅ Document the scope  
+    ✅ Verify target IP/domain  
+    ✅ Read legal disclaimers
+  </Card>
+
+  <Card title="During Scanning" icon="gauge-high">
+    ✅ Monitor progress  
+    ✅ Be aware of network impact  
+    ✅ Respect time windows  
+    ✅ Keep logs for documentation
+  </Card>
+
+  <Card title="After Scanning" icon="file-circle-check">
+    ✅ Review PDF report thoroughly  
+    ✅ Validate findings  
+    ✅ Share with authorized parties only  
+    ✅ Follow up on remediation
+  </Card>
+
+  <Card title="Security" icon="shield-halved">
+    ✅ Store reports securely  
+    ✅ Don't share credentials  
+    ✅ Use safe mode by default  
+    ✅ Report responsibly
+  </Card>
+</CardGroup>
+
+## Quick Reference Cheatsheet
+
+```bash
+# ┌──────────────────────────────────────────────────────┐
+# │ AutoPentestX Quick Commands                          │
+# └──────────────────────────────────────────────────────┘
+
+# Full scan
+python3 main.py -t <target>
+
+# Quick recon
+python3 main.py -t <target> --skip-web --skip-exploit
+
+# Custom tester name
+python3 main.py -t <target> -n "Your Name"
+
+# View reports
+ls reports/
+
+# Query database
+sqlite3 database/autopentestx.db "SELECT * FROM scans;"
+
+# Help
+python3 main.py --help
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Advanced Configuration" icon="sliders">
+    Learn about custom scan profiles and advanced options
+  </Card>
+
+  <Card title="Interpreting Results" icon="chart-line">
+    Understand risk scores, CVSS ratings, and remediation priorities
+  </Card>
+
+  <Card title="Metasploit Integration" icon="bomb">
+    Use generated RC scripts for manual exploitation testing
+  </Card>
+
+  <Card title="CI/CD Integration" icon="code-branch">
+    Automate security testing in your development pipeline
+  </Card>
+</CardGroup>
+
+<Warning>
+**Remember**: AutoPentestX is a powerful tool. Always:
+- Get authorization before testing
+- Use safe mode by default
+- Handle data responsibly
+- Follow responsible disclosure practices
+</Warning>

@@ -1,0 +1,414 @@
+---
+title: 'Advanced Scanning Techniques'
+description: 'Master advanced CLI flags and performance optimization for AutoPentestX'
+icon: 'rocket'
+---
+
+Take your penetration testing to the next level with advanced scanning techniques, custom configurations, and performance optimization strategies.
+
+## Command Line Reference
+
+AutoPentestX supports several flags to customize scan behavior:
+
+```bash Help Command
+python3 main.py --help
+```
+
+### Available Flags
+
+<ParamField path="-t, --target" type="string" required>
+  Target IP address or domain name to scan
+</ParamField>
+
+<ParamField path="-n, --tester-name" type="string" default="AutoPentestX Team">
+  Name of the penetration tester (appears in PDF report)
+</ParamField>
+
+<ParamField path="--no-safe-mode" type="boolean" default="false">
+  Disable safe mode (NOT RECOMMENDED - removes exploitation safeguards)
+</ParamField>
+
+<ParamField path="--skip-web" type="boolean" default="false">
+  Skip web vulnerability scanning with Nikto and SQLMap
+</ParamField>
+
+<ParamField path="--skip-exploit" type="boolean" default="false">
+  Skip exploitation assessment and Metasploit script generation
+</ParamField>
+
+<ParamField path="--version" type="boolean">
+  Display AutoPentestX version information
+</ParamField>
+
+## Performance Optimization Modes
+
+Choose the right scan mode based on your time constraints and objectives:
+
+<Tabs>
+  <Tab title="Lightning Strike">
+    ### Reconnaissance Only (5-10 minutes)
+
+    Skip web and exploitation phases for rapid port discovery:
+
+    ```bash
+    python3 main.py -t 192.168.1.100 --skip-web --skip-exploit
+    ```
+
+    **What Runs:**
+    - ✅ Nmap port scanning
+    - ✅ Service version detection
+    - ✅ OS fingerprinting
+    - ✅ CVE lookup
+    - ❌ Nikto web scanning
+    - ❌ SQLMap injection testing
+    - ❌ Exploit matching
+
+    **Best For:**
+    - Initial reconnaissance
+    - Network inventory
+    - Quick security checks
+    - CI/CD pipeline integration
+
+    **Output:**
+    - Port and service list
+    - CVE intelligence
+    - Lightweight PDF report
+  </Tab>
+
+  <Tab title="Tactical Assault">
+    ### Standard Scan + Web (10-20 minutes)
+
+    Include web vulnerability scanning but skip exploitation:
+
+    ```bash
+    python3 main.py -t 192.168.1.100 --skip-exploit
+    ```
+
+    **What Runs:**
+    - ✅ Nmap port scanning
+    - ✅ Service version detection
+    - ✅ Nikto web scanning
+    - ✅ SQLMap injection testing
+    - ✅ CVE lookup
+    - ❌ Exploit matching
+    - ❌ Metasploit RC scripts
+
+    **Best For:**
+    - Web application testing
+    - Vulnerability discovery
+    - Compliance scanning
+    - Regular security audits
+
+    **Output:**
+    - Complete vulnerability list
+    - Web-specific findings
+    - SQL injection analysis
+    - Comprehensive PDF report
+  </Tab>
+
+  <Tab title="Total Annihilation">
+    ### Full Spectrum Scan (20-30 minutes)
+
+    Execute all modules for complete penetration testing:
+
+    ```bash
+    python3 main.py -t 192.168.1.100
+    ```
+
+    **What Runs:**
+    - ✅ Nmap port scanning
+    - ✅ Service version detection
+    - ✅ Nikto web scanning
+    - ✅ SQLMap injection testing
+    - ✅ CVE lookup
+    - ✅ Exploit matching
+    - ✅ Metasploit RC script generation
+
+    **Best For:**
+    - Comprehensive penetration tests
+    - Security assessments
+    - Vulnerability research
+    - Lab environments
+
+    **Output:**
+    - Complete vulnerability database
+    - Exploit feasibility reports
+    - Metasploit resource scripts
+    - Full-featured PDF report
+  </Tab>
+</Tabs>
+
+## Real-World Scenarios
+
+### Scenario 1: Web Application Pentest
+
+You're testing a web application on port 8080:
+
+```bash
+python3 main.py -t webapp.example.com -n "Security Team" --skip-exploit
+```
+
+**Why These Flags:**
+- Include your team name in the report (`-n`)
+- Focus on web vulnerabilities (default includes Nikto/SQLMap)
+- Skip exploitation since you're only doing vulnerability discovery (`--skip-exploit`)
+
+### Scenario 2: Quick Infrastructure Audit
+
+You need to audit 10 servers in 1 hour:
+
+```bash
+# Fast scan per server (~6 minutes each)
+for ip in 10.0.0.{1..10}; do
+  python3 main.py -t $ip --skip-web --skip-exploit -n "Audit Team"
+done
+```
+
+**Why These Flags:**
+- Skip time-consuming web scans (`--skip-web`)
+- Skip exploitation assessment (`--skip-exploit`)
+- Get port inventory and CVE data only
+
+### Scenario 3: Lab CTF Challenge
+
+You're playing a Capture The Flag competition:
+
+```bash
+python3 main.py -t ctf-target.local -n "Your Name"
+```
+
+**Why These Flags:**
+- Run full scan to find all attack vectors
+- Generate Metasploit RC scripts for manual exploitation
+- Get comprehensive vulnerability list
+
+### Scenario 4: Pre-Deployment Security Check
+
+Validate a new server before production deployment:
+
+```bash
+python3 main.py -t staging.example.com -n "DevOps Team" --skip-exploit
+```
+
+**Why These Flags:**
+- Full vulnerability scan including web services
+- Skip exploitation since this is a pre-prod check
+- Generate report for compliance documentation
+
+## Safe Mode vs No-Safe-Mode
+
+<Warning>
+  **Never disable safe mode** unless you fully understand the consequences and have explicit authorization.
+</Warning>
+
+### Safe Mode (Default)
+
+```bash
+python3 main.py -t 192.168.1.100
+```
+
+**Behavior:**
+- ✅ Identifies exploitable vulnerabilities
+- ✅ Generates Metasploit RC scripts
+- ✅ Simulates exploitation attempts
+- ❌ Does NOT execute actual exploits
+- ❌ Does NOT modify target system
+
+**Use Case:** Educational, vulnerability discovery, report generation
+
+### No-Safe-Mode
+
+```bash
+python3 main.py -t 192.168.1.100 --no-safe-mode
+```
+
+<Warning>
+  **Currently Blocked for Safety**: Even with `--no-safe-mode`, exploitation is disabled to prevent accidental system damage. This feature is for advanced users in controlled lab environments only.
+</Warning>
+
+**Intended Behavior (if enabled):**
+- ⚠️ Could execute actual exploits
+- ⚠️ Might crash services
+- ⚠️ Could damage target systems
+- ⚠️ Requires explicit authorization
+
+**Source Code Reference:**
+
+From `modules/exploit_engine.py:125-132`:
+
+```python
+if not self.safe_mode:
+    print("[!] WARNING: Safe mode disabled - This could cause system damage!")
+    return {
+        'status': 'BLOCKED',
+        'reason': 'Exploitation disabled for safety'
+    }
+```
+
+## Combining Multiple Flags
+
+<CodeGroup>
+
+```bash Minimal Scan
+# Fastest possible scan
+python3 main.py -t 10.0.0.1 --skip-web --skip-exploit
+```
+
+```bash Custom Report Name
+# Add your name to the report
+python3 main.py -t example.com -n "Jane Doe, Senior Pentester"
+```
+
+```bash Production Web Audit
+# Web-focused scan for production systems
+python3 main.py -t api.example.com -n "Security Audit Team" --skip-exploit
+```
+
+```bash Lab Testing
+# Full scan for lab environment
+python3 main.py -t 192.168.56.101 -n "Lab User"
+```
+
+</CodeGroup>
+
+## Advanced Database Queries
+
+Access detailed scan data from the SQLite database:
+
+### View All Scans
+
+```bash
+sqlite3 database/autopentestx.db "SELECT id, target, risk_score, status, created_at FROM scans;"
+```
+
+### Find High-Risk Ports
+
+```bash
+sqlite3 database/autopentestx.db "SELECT port, service, version FROM ports WHERE scan_id = 1;"
+```
+
+### List All Vulnerabilities
+
+```bash
+sqlite3 database/autopentestx.db "SELECT port, name, risk_level, cve_id FROM vulnerabilities WHERE scan_id = 1 ORDER BY risk_level DESC;"
+```
+
+### Exploitation Attempts
+
+```bash
+sqlite3 database/autopentestx.db "SELECT name, status FROM exploits WHERE scan_id = 1;"
+```
+
+### Export to JSON
+
+```bash
+sqlite3 database/autopentestx.db -json "SELECT * FROM scans WHERE id = 1;" > scan_data.json
+```
+
+## Performance Tips
+
+<Tip>
+  **Network Speed Impact**: Scan duration heavily depends on network latency and target responsiveness. Local network scans are significantly faster than internet-based scans.
+</Tip>
+
+### Speed Up Scans
+
+1. **Skip Unnecessary Phases**
+   - Use `--skip-web` if not testing web applications
+   - Use `--skip-exploit` if only doing vulnerability discovery
+
+2. **Scan During Off-Hours**
+   - Less network congestion
+   - Lower risk of service disruption
+
+3. **Use Local DNS**
+   - Scan by IP address instead of domain when possible
+   - Reduces DNS lookup overhead
+
+4. **Run with Sudo**
+   - Enables faster SYN scans in Nmap
+   - Improves OS detection accuracy
+
+   ```bash
+   sudo python3 main.py -t 192.168.1.100
+   ```
+
+### Parallel Scanning
+
+Scan multiple targets simultaneously:
+
+```bash
+# Use GNU parallel or run in separate terminals
+parallel -j 4 python3 main.py -t {} --skip-web ::: 192.168.1.{1..20}
+```
+
+## Interrupt and Resume
+
+### Gracefully Stop a Scan
+
+Press `Ctrl+C` to interrupt:
+
+```text
+^C
+[!] MISSION ABORT - Operator initiated shutdown
+```
+
+The scan will:
+- Mark status as 'interrupted' in database
+- Save all data collected so far
+- Close connections cleanly
+
+### Check Interrupted Scans
+
+```bash
+sqlite3 database/autopentestx.db "SELECT id, target, status FROM scans WHERE status = 'interrupted';"
+```
+
+<Note>
+  AutoPentestX does not currently support resuming interrupted scans. You must restart from the beginning.
+</Note>
+
+## Automation and Integration
+
+### Scheduled Scans
+
+Set up a cron job for weekly scans:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add this line (runs every Monday at 2 AM)
+0 2 * * 1 cd /path/to/AutoPentestX && source venv/bin/activate && python3 main.py -t 192.168.1.100 --skip-exploit
+```
+
+### CI/CD Integration
+
+Add to your pipeline for continuous security testing:
+
+```yaml .gitlab-ci.yml
+security_scan:
+  stage: test
+  script:
+    - cd AutoPentestX
+    - source venv/bin/activate
+    - python3 main.py -t $STAGING_SERVER --skip-web --skip-exploit
+  artifacts:
+    paths:
+      - reports/*.pdf
+    expire_in: 30 days
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+
+<Card title="Web Vulnerabilities" icon="globe" href="/guides/web-vulnerabilities">
+  Deep dive into Nikto and SQLMap findings
+</Card>
+
+<Card title="Exploitation" icon="bomb" href="/guides/exploitation">
+  Learn about Metasploit integration and exploit simulation
+</Card>
+
+</CardGroup>

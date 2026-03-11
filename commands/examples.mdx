@@ -1,0 +1,598 @@
+---
+title: Command Examples
+description: Real-world AutoPentestX command-line usage examples and scenarios
+icon: terminal
+---
+
+This page provides comprehensive examples of AutoPentestX commands for various penetration testing scenarios.
+
+## Quick Start Examples
+
+### Basic Full Scan
+
+The simplest way to perform a complete penetration test:
+
+```bash
+python3 main.py -t 192.168.1.100
+```
+
+<Accordion title="Expected Output">
+```
+╔════════════════════════════════════════════════════════════════════╗
+║ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ AutoPentestX v1.0 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓       ║
+║      Automated Penetration Testing & Vulnerability Assessment    ║
+╚════════════════════════════════════════════════════════════════════╝
+
+┌────────────────────── [MISSION BRIEFING] ─────────────────────────┐
+│ ► Target IP/Domain: 192.168.1.100
+│ ► Operator: AutoPentestX Team
+│ ► Safe Mode: [✓] ENABLED
+│ ► Timestamp: 2026-03-11 14:30:00
+└───────────────────────────────────────────────────────────────────┘
+
+[▓▓▓▓▓▓▓▓▓▓] Phase 1: Network Reconnaissance
+[*] Running Nmap scan...
+[*] Discovered 15 open ports
+
+[▓▓▓▓▓▓▓▓▓▓] Phase 2: Service Detection
+[*] Identifying service versions...
+[*] Detected 12 services with version info
+
+[▓▓▓▓▓▓▓▓▓▓] Phase 3: Web Vulnerability Scanning
+[*] Running Nikto scan on port 80...
+[*] Running SQLMap on detected forms...
+
+[▓▓▓▓▓▓▓▓▓▓] Phase 4: CVE Lookup
+[*] Querying vulnerability databases...
+[*] Found 8 potential CVEs
+
+[▓▓▓▓▓▓▓▓▓▓] Phase 5: Exploitation Assessment
+[*] Analyzing exploitability...
+[*] Generated Metasploit RC scripts
+
+[▓▓▓▓▓▓▓▓▓▓] Phase 6: Report Generation
+[*] Creating PDF report...
+[✓] Report saved: reports/AutoPentestX_Report_20260311_143000.pdf
+
+[✓] Assessment completed successfully
+```
+</Accordion>
+
+### Custom Tester Name
+
+Identify yourself in the generated reports:
+
+```bash
+python3 main.py -t 192.168.1.100 -n "John Doe"
+```
+
+```bash
+python3 main.py -t example.com --tester-name "Security Team"
+```
+
+### Using the Wrapper Script
+
+For automatic virtual environment handling:
+
+```bash
+./autopentestx.sh 127.0.0.1
+```
+
+<Accordion title="Wrapper Script Output">
+```
+   ___       __       ___           __           __  _  __
+  / _ |__ __/ /____  / _ \___ ___  / /____  ___ / /_| |/ /
+ / __ / // / __/ _ \/ ___/ -_) _ \/ __/ -_|(_-</ __/>  < 
+/_/ |_\_,_/\__/\___/_/   \__/_//_/\__/\__/___/\__/_/|_| 
+                                                         
+           Automated Penetration Testing Toolkit
+
+═══════════════════════════════════════════════════════════
+                    ⚠️  LEGAL WARNING ⚠️
+═══════════════════════════════════════════════════════════
+This tool should ONLY be used on systems you own or have
+explicit written authorization to test.
+
+Unauthorized access to computer systems is ILLEGAL!
+═══════════════════════════════════════════════════════════
+
+[*] Starting AutoPentestX...
+[*] Target: 127.0.0.1
+[*] Log file: logs/autopentestx_20260311_143000.log
+
+[Scanning begins...]
+
+[✓] Assessment completed successfully
+[i] Check the reports/ directory for PDF report
+[i] Log file saved to: logs/autopentestx_20260311_143000.log
+```
+</Accordion>
+
+## Scenario-Based Examples
+
+### Web Application Testing
+
+<Tabs>
+
+<Tab title="Complete Assessment">
+```bash
+# Full web application penetration test
+python3 main.py -t web.example.com -n "Application Security Team"
+```
+
+**Includes:**
+- Port scanning and service detection
+- Nikto web server vulnerability scanning
+- SQLMap SQL injection testing
+- CVE lookups for detected services
+- Exploitation assessment
+- Comprehensive PDF report
+
+**Duration:** 20-30 minutes
+</Tab>
+
+<Tab title="Read-Only Scan">
+```bash
+# Web vulnerability assessment without exploitation
+python3 main.py -t web.example.com --skip-exploit -n "Security Audit"
+```
+
+**Includes:**
+- All scanning modules
+- Web vulnerability detection
+- CVE identification
+- Risk scoring
+
+**Excludes:**
+- Active exploitation attempts
+- Metasploit module testing
+
+**Duration:** 15-20 minutes
+</Tab>
+
+<Tab title="Quick Recon">
+```bash
+# Rapid web service reconnaissance
+python3 main.py -t web.example.com --skip-web --skip-exploit
+```
+
+**Includes:**
+- Port scanning
+- Service version detection
+- Basic vulnerability enumeration
+
+**Excludes:**
+- Web-specific scanning (Nikto, SQLMap)
+- Exploitation attempts
+
+**Duration:** 5-10 minutes
+</Tab>
+
+</Tabs>
+
+### Network Infrastructure Testing
+
+#### Router/Switch Assessment
+
+```bash
+# Network device security audit
+python3 main.py -t 192.168.1.1 --skip-web -n "Network Security Team"
+```
+
+**Rationale:**
+- Network devices typically don't run web applications
+- Focus on management interfaces and service hardening
+- Includes exploitation for privilege escalation
+
+#### Firewall Configuration Review
+
+```bash
+# Firewall penetration test
+python3 main.py -t 10.0.0.1 --skip-web --skip-exploit -n "Perimeter Security"
+```
+
+**Rationale:**
+- Avoid exploitation on critical network infrastructure
+- Identify open management ports
+- Detect outdated firmware versions
+
+### Database Server Testing
+
+```bash
+# Database server security assessment
+python3 main.py -t 192.168.1.50 --skip-web -n "Database Security Audit"
+```
+
+**Test Coverage:**
+- MySQL/PostgreSQL/MongoDB port scanning
+- Service version detection
+- CVE lookups for database engines
+- Exploitation assessment for known vulnerabilities
+
+<Note>
+AutoPentestX does not perform authenticated database testing. For comprehensive database security, use specialized tools after initial reconnaissance.
+</Note>
+
+### IoT Device Testing
+
+```bash
+# IoT device penetration test
+python3 main.py -t 192.168.1.200 -n "IoT Security Research"
+```
+
+**Common Findings:**
+- Telnet/SSH with default credentials
+- Unpatched embedded web servers
+- Vulnerable UPnP implementations
+- Outdated Linux kernel versions
+
+## Performance-Optimized Examples
+
+### Lightning Strike Mode (5-10 minutes)
+
+Rapid reconnaissance with minimal footprint:
+
+```bash
+python3 main.py -t 192.168.1.100 --skip-web --skip-exploit
+```
+
+**Use Cases:**
+- Initial network mapping
+- Quick asset inventory
+- Time-critical assessments
+- Large-scale network sweeps
+
+**Terminal Output:**
+```
+[▓▓▓▓▓▓▓▓▓▓] LIGHTNING STRIKE - RECON ONLY
+[*] Target: 192.168.1.100
+[*] Mode: Maximum Speed | Minimal Footprint
+
+[*] Phase 1: Network Scan... ✓ (2 min)
+[*] Phase 2: Service Detection... ✓ (3 min)
+[*] Phase 3: CVE Lookup... ✓ (2 min)
+[*] Phase 4: Report Generation... ✓ (1 min)
+
+[✓] Total time: 8 minutes
+[i] Report: reports/AutoPentestX_Report_*.pdf
+```
+
+### Tactical Assault Mode (10-20 minutes)
+
+Balanced assessment with web scanning:
+
+```bash
+python3 main.py -t 192.168.1.100 --skip-exploit
+```
+
+**Use Cases:**
+- Production environment scanning
+- Compliance assessments
+- Vulnerability enumeration
+- Risk analysis without active exploitation
+
+### Total Annihilation Mode (20-30 minutes)
+
+Comprehensive penetration testing:
+
+```bash
+python3 main.py -t 192.168.1.100
+```
+
+**Use Cases:**
+- Complete security assessments
+- Red team engagements
+- Pre-production validation
+- Lab environment testing
+
+## Batch Scanning Examples
+
+### Multiple Targets Sequential
+
+```bash
+#!/bin/bash
+# Scan multiple targets in sequence
+
+TARGETS=("192.168.1.100" "192.168.1.101" "192.168.1.102")
+
+for target in "${TARGETS[@]}"; do
+  echo "[*] Scanning $target..."
+  python3 main.py -t "$target" -n "Batch Scanner"
+  echo "[✓] Completed: $target"
+  echo "-----------------------------------"
+done
+```
+
+### Subnet Scanning
+
+```bash
+#!/bin/bash
+# Scan a subnet range
+
+for i in {100..110}; do
+  TARGET="192.168.1.$i"
+  echo "[*] Testing $TARGET"
+  
+  # Quick connectivity check
+  if ping -c 1 -W 1 "$TARGET" &> /dev/null; then
+    echo "[+] Host alive: $TARGET"
+    python3 main.py -t "$TARGET" --skip-exploit -n "Subnet Scan"
+  else
+    echo "[-] Host unreachable: $TARGET"
+  fi
+done
+```
+
+### Parallel Scanning (Advanced)
+
+```bash
+#!/bin/bash
+# Parallel scanning with GNU parallel
+
+cat targets.txt | parallel -j 3 \
+  'python3 main.py -t {} --skip-exploit -n "Parallel Scanner"'
+```
+
+**targets.txt:**
+```
+192.168.1.100
+192.168.1.101
+192.168.1.102
+192.168.1.103
+192.168.1.104
+```
+
+<Warning>
+**Performance Considerations:**
+- Parallel scanning generates high network traffic
+- May trigger IDS/IPS alerts
+- Requires sufficient system resources
+- Can overwhelm target networks
+
+Always obtain authorization before high-volume scanning.
+</Warning>
+
+## CI/CD Integration Examples
+
+### GitHub Actions
+
+```yaml
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly Monday 2 AM
+
+jobs:
+  security_scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install AutoPentestX
+      run: |
+        git clone https://github.com/your-org/AutoPentestX.git
+        cd AutoPentestX
+        ./install.sh
+    
+    - name: Run Security Scan
+      run: |
+        cd AutoPentestX
+        source venv/bin/activate
+        python3 main.py -t ${{ secrets.STAGING_SERVER }} \
+          --no-safe-mode \
+          --skip-exploit \
+          -n "GitHub Actions CI"
+    
+    - name: Upload Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-report
+        path: AutoPentestX/reports/*.pdf
+        retention-days: 30
+```
+
+### GitLab CI/CD
+
+```yaml
+stages:
+  - security
+
+security_scan:
+  stage: security
+  image: python:3.10
+  
+  before_script:
+    - apt-get update && apt-get install -y nmap nikto sqlmap
+    - git clone https://github.com/your-org/AutoPentestX.git
+    - cd AutoPentestX && ./install.sh
+  
+  script:
+    - source venv/bin/activate
+    - python3 main.py -t $STAGING_SERVER \
+        --no-safe-mode \
+        --skip-exploit \
+        -n "GitLab CI Pipeline"
+  
+  artifacts:
+    paths:
+      - AutoPentestX/reports/*.pdf
+      - AutoPentestX/database/autopentestx.db
+    expire_in: 30 days
+  
+  only:
+    - develop
+    - main
+  
+  when: manual
+```
+
+### Jenkins Pipeline
+
+```groovy
+pipeline {
+    agent any
+    
+    parameters {
+        string(name: 'TARGET', defaultValue: '192.168.1.100', description: 'Scan target')
+        choice(name: 'SCAN_MODE', choices: ['full', 'quick', 'no-exploit'], description: 'Scan mode')
+    }
+    
+    stages {
+        stage('Security Scan') {
+            steps {
+                script {
+                    def skipFlags = ''
+                    if (params.SCAN_MODE == 'quick') {
+                        skipFlags = '--skip-web --skip-exploit'
+                    } else if (params.SCAN_MODE == 'no-exploit') {
+                        skipFlags = '--skip-exploit'
+                    }
+                    
+                    sh """
+                        cd AutoPentestX
+                        source venv/bin/activate
+                        python3 main.py -t ${params.TARGET} \
+                            --no-safe-mode \
+                            ${skipFlags} \
+                            -n "Jenkins Build ${BUILD_NUMBER}"
+                    """
+                }
+            }
+        }
+        
+        stage('Archive Results') {
+            steps {
+                archiveArtifacts artifacts: 'AutoPentestX/reports/*.pdf', fingerprint: true
+                archiveArtifacts artifacts: 'AutoPentestX/database/autopentestx.db', fingerprint: true
+            }
+        }
+    }
+}
+```
+
+## Troubleshooting Examples
+
+### Permission Issues
+
+```bash
+# Error: Permission denied for raw socket operations
+sudo python3 main.py -t 192.168.1.100
+```
+
+### Virtual Environment Activation
+
+```bash
+# Manual virtual environment handling
+cd AutoPentestX
+source venv/bin/activate
+python3 main.py -t 192.168.1.100
+deactivate
+```
+
+### Checking Scan Logs
+
+```bash
+# View real-time scan progress
+tail -f logs/autopentestx_*.log
+
+# Search for errors
+grep -i error logs/autopentestx_*.log
+
+# Review specific phase
+grep "Phase 3" logs/autopentestx_*.log
+```
+
+### Database Query Examples
+
+```bash
+# Access scan results database
+sqlite3 database/autopentestx.db
+
+# List all scans
+SELECT scan_id, target, start_time FROM scans;
+
+# View vulnerabilities from specific scan
+SELECT * FROM vulnerabilities WHERE scan_id = 1;
+
+# Export to CSV
+.mode csv
+.output scan_results.csv
+SELECT * FROM scans;
+.quit
+```
+
+## Advanced Examples
+
+### Custom Report Naming
+
+While AutoPentestX automatically generates timestamped reports, you can organize them:
+
+```bash
+#!/bin/bash
+# Scan with custom organization
+
+TARGET="192.168.1.100"
+PROJECT="WebApp-Q1-2026"
+
+python3 main.py -t "$TARGET" -n "$PROJECT"
+
+# Rename report with custom naming
+LATEST_REPORT=$(ls -t reports/AutoPentestX_Report_*.pdf | head -1)
+mv "$LATEST_REPORT" "reports/${PROJECT}_${TARGET}_$(date +%Y%m%d).pdf"
+
+echo "[✓] Report saved: reports/${PROJECT}_${TARGET}_$(date +%Y%m%d).pdf"
+```
+
+### Notification Integration
+
+```bash
+#!/bin/bash
+# Scan with Slack notification
+
+TARGET="192.168.1.100"
+SLACK_WEBHOOK="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+
+python3 main.py -t "$TARGET" -n "Automated Scanner"
+
+if [ $? -eq 0 ]; then
+  curl -X POST "$SLACK_WEBHOOK" \
+    -H 'Content-Type: application/json' \
+    -d '{"text":"✅ Security scan completed for '"$TARGET"'"}'
+else
+  curl -X POST "$SLACK_WEBHOOK" \
+    -H 'Content-Type: application/json' \
+    -d '{"text":"❌ Security scan failed for '"$TARGET"'"}'
+fi
+```
+
+## Related Documentation
+
+<CardGroup cols={2}>
+
+<Card title="CLI Options" icon="sliders" href="/commands/options">
+Detailed flag documentation
+</Card>
+
+<Card title="Target Specification" icon="bullseye" href="/commands/target">
+Target format and selection
+</Card>
+
+<Card title="Report Analysis" icon="file-pdf" href="/features/pdf-reports">
+Understanding generated reports
+</Card>
+
+<Card title="Automation Guide" icon="robot" href="/advanced/automation">
+CI/CD integration strategies
+</Card>
+
+</CardGroup>

@@ -1,0 +1,366 @@
+---
+title: "PDF Report Module"
+description: "Professional penetration testing reports with ReportLab"
+icon: "file-pdf"
+---
+
+## Overview
+
+The PDF Report module (`modules/pdf_report.py`) generates comprehensive, professional-quality penetration testing reports using ReportLab. Reports include cover pages, executive summaries, technical findings, risk assessments, and remediation recommendations.
+
+## PDFReportGenerator Class
+
+Defined at `pdf_report.py:17`, this class handles all PDF generation.
+
+### Initialization
+
+```python pdf_report.py:18-35
+class PDFReportGenerator:
+    def __init__(self, target, scan_id):
+        """Initialize PDF report generator"""
+        self.target = target
+        self.scan_id = scan_id
+        self.timestamp = datetime.now()
+        self.filename = f"reports/AutoPentestX_Report_{target.replace('.', '_')}_{self.timestamp.strftime('%Y%m%d_%H%M%S')}.pdf"
+        
+        # Ensure reports directory exists
+        os.makedirs('reports', exist_ok=True)
+        
+        # Initialize document
+        self.doc = SimpleDocTemplate(self.filename, pagesize=letter)
+        self.story = []
+        self.styles = getSampleStyleSheet()
+        
+        # Create custom styles
+        self.create_custom_styles()
+```
+
+<ParamField path="target" type="string" required>
+  Target IP address or domain name
+</ParamField>
+
+<ParamField path="scan_id" type="number" required>
+  Database scan ID for data retrieval
+</ParamField>
+
+## Report Structure
+
+A complete AutoPentestX report contains 10 sections:
+
+<Accordion title="1. Cover Page">
+  Professional title page with:
+  - Report title and classification
+  - Target information
+  - Scan date and time
+  - Tester name
+  - Scan ID reference
+</Accordion>
+
+<Accordion title="2. Executive Summary">
+  High-level overview for management:
+  - Overall risk rating
+  - Total vulnerabilities found
+  - Critical findings count
+  - Key recommendations
+  - Compliance implications
+</Accordion>
+
+<Accordion title="3. Scan Details">
+  Technical scan information:
+  - Target IP/domain
+  - Scan duration
+  - Operating system detection
+  - Number of open ports
+  - Scan methodology
+</Accordion>
+
+<Accordion title="4. Open Ports Table">
+  Comprehensive port listing:
+  - Port number and protocol
+  - Service name and version
+  - State (open/filtered)
+  - Banner information
+</Accordion>
+
+<Accordion title="5. Vulnerabilities">
+  Detailed vulnerability findings:
+  - CVE identifiers
+  - CVSS scores
+  - Risk severity
+  - Affected services
+  - Description and impact
+</Accordion>
+
+<Accordion title="6. Risk Assessment">
+  Multi-factor risk analysis:
+  - Overall risk level
+  - Risk score breakdown by port
+  - Exploitability analysis
+  - Business impact assessment
+</Accordion>
+
+<Accordion title="7. Web Vulnerabilities">
+  Web application findings:
+  - Nikto scan results
+  - SQL injection points
+  - XSS vulnerabilities
+  - Misconfigurations
+</Accordion>
+
+<Accordion title="8. Exploitation Assessment">
+  Safe mode exploitation results:
+  - Matched exploits
+  - Simulation outcomes
+  - Metasploit RC scripts
+  - Proof-of-concept references
+</Accordion>
+
+<Accordion title="9. Recommendations">
+  Prioritized remediation steps:
+  - Critical fixes (immediate)
+  - High priority (30 days)
+  - Medium priority (90 days)
+  - Long-term hardening
+</Accordion>
+
+<Accordion title="10. Disclaimer & Legal Notice">
+  Legal protection and usage terms:
+  - Authorized testing statement
+  - Limitation of liability
+  - Confidentiality notice
+  - Report validity period
+</Accordion>
+
+## Custom Styles
+
+The module creates color-coded styles for risk levels:
+
+```python pdf_report.py:36-91
+def create_custom_styles(self):
+    """Create custom paragraph styles"""
+    # Risk level styles
+    self.styles.add(ParagraphStyle(
+        name='CriticalRisk',
+        parent=self.styles['Normal'],
+        fontSize=12,
+        textColor=colors.red,
+        fontName='Helvetica-Bold'
+    ))
+    
+    self.styles.add(ParagraphStyle(
+        name='HighRisk',
+        parent=self.styles['Normal'],
+        fontSize=12,
+        textColor=colors.orangered,
+        fontName='Helvetica-Bold'
+    ))
+    
+    self.styles.add(ParagraphStyle(
+        name='MediumRisk',
+        parent=self.styles['Normal'],
+        fontSize=12,
+        textColor=colors.orange,
+        fontName='Helvetica-Bold'
+    ))
+    
+    self.styles.add(ParagraphStyle(
+        name='LowRisk',
+        parent=self.styles['Normal'],
+        fontSize=12,
+        textColor=colors.blue,
+        fontName='Helvetica-Bold'
+    ))
+```
+
+**Risk Color Coding:**
+- **CRITICAL**: Red (`colors.red`)
+- **HIGH**: Orange-red (`colors.orangered`)
+- **MEDIUM**: Orange (`colors.orange`)
+- **LOW**: Blue (`colors.blue`)
+- **INFORMATIONAL**: Gray
+
+## Report Generation
+
+### generate_report()
+
+Orchestrates the complete report generation process.
+
+```python pdf_report.py:250-310
+def generate_report(self, scan_results, vulnerabilities, cves, 
+                   web_vulns, sql_vulns, risk_results, 
+                   exploit_results, tester_name):
+    """Generate complete PDF report"""
+    try:
+        # 1. Cover page
+        self.add_cover_page(tester_name)
+        self.story.append(PageBreak())
+        
+        # 2. Executive summary
+        self.add_executive_summary(risk_results)
+        self.story.append(PageBreak())
+        
+        # 3. Scan details
+        self.add_scan_details(scan_results)
+        self.story.append(Spacer(1, 0.3*inch))
+        
+        # 4. Open ports
+        self.add_ports_table(scan_results['ports'])
+        self.story.append(PageBreak())
+        
+        # 5. Vulnerabilities
+        self.add_vulnerabilities_section(vulnerabilities, cves)
+        self.story.append(PageBreak())
+        
+        # 6. Risk assessment
+        self.add_risk_assessment(risk_results)
+        self.story.append(PageBreak())
+        
+        # 7. Web vulnerabilities
+        if web_vulns or sql_vulns:
+            self.add_web_vulnerabilities(web_vulns, sql_vulns)
+            self.story.append(PageBreak())
+        
+        # 8. Exploitation
+        if exploit_results:
+            self.add_exploitation_section(exploit_results)
+            self.story.append(PageBreak())
+        
+        # 9. Recommendations
+        self.add_recommendations(risk_results)
+        self.story.append(PageBreak())
+        
+        # 10. Disclaimer
+        self.add_disclaimer()
+        
+        # Build PDF
+        self.doc.build(self.story)
+        
+        print(f"[✓] PDF report generated: {self.filename}")
+        return self.filename
+        
+    except Exception as e:
+        print(f"[✗] Report generation failed: {e}")
+        return None
+```
+
+## Vulnerability Table
+
+Vulnerabilities are displayed in a formatted table:
+
+```python pdf_report.py:180-220
+def add_vulnerabilities_section(self, vulnerabilities, cves):
+    """Add vulnerabilities section with table"""
+    # Table header
+    table_data = [[
+        Paragraph('<b>CVE/Vuln</b>', self.styles['Normal']),
+        Paragraph('<b>Port</b>', self.styles['Normal']),
+        Paragraph('<b>Service</b>', self.styles['Normal']),
+        Paragraph('<b>CVSS</b>', self.styles['Normal']),
+        Paragraph('<b>Risk</b>', self.styles['Normal']),
+        Paragraph('<b>Description</b>', self.styles['Normal'])
+    ]]
+    
+    # Add CVE entries
+    for cve in cves:
+        risk_level = cve.get('risk_level', 'UNKNOWN')
+        risk_style = f"{risk_level.title()}Risk"
+        
+        table_data.append([
+            cve.get('cve_id', 'N/A'),
+            str(cve.get('port', 'N/A')),
+            cve.get('service', 'Unknown'),
+            str(cve.get('cvss_score', '0.0')),
+            Paragraph(risk_level, self.styles.get(risk_style, self.styles['Normal'])),
+            Paragraph(cve.get('description', '')[:200] + '...', self.styles['Normal'])
+        ])
+    
+    # Create table with styling
+    table = Table(table_data, colWidths=[1.2*inch, 0.6*inch, 1*inch, 0.6*inch, 0.8*inch, 2.5*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP')
+    ]))
+    
+    self.story.append(table)
+```
+
+## Usage Example
+
+```python
+from modules.pdf_report import PDFReportGenerator
+
+# Initialize report generator
+pdf_gen = PDFReportGenerator(target="192.168.1.100", scan_id=42)
+
+# Generate report
+report_file = pdf_gen.generate_report(
+    scan_results=scan_data,
+    vulnerabilities=vuln_list,
+    cves=cve_list,
+    web_vulns=web_vuln_list,
+    sql_vulns=sql_vuln_list,
+    risk_results=risk_assessment,
+    exploit_results=exploit_list,
+    tester_name="Jane Doe"
+)
+
+if report_file:
+    print(f"Report saved to: {report_file}")
+```
+
+## File Naming Convention
+
+Reports are automatically named using:
+
+```
+AutoPentestX_Report_{target}_{timestamp}.pdf
+```
+
+**Examples:**
+- `AutoPentestX_Report_192_168_1_100_20240115_143000.pdf`
+- `AutoPentestX_Report_example_com_20240115_143000.pdf`
+
+## Customization Options
+
+### Custom Tester Name
+
+```bash
+python3 main.py -t 192.168.1.100 -n "Security Team"
+```
+
+### Page Size
+
+Default: Letter (8.5" x 11")
+
+To change to A4:
+
+```python pdf_report.py:29
+self.doc = SimpleDocTemplate(self.filename, pagesize=A4)
+```
+
+### Color Scheme
+
+Modify risk colors in `create_custom_styles()` method.
+
+## Related Documentation
+
+<CardGroup cols={2}>
+  <Card title="PDF Reports Guide" icon="book" href="/guides/reports">
+    Complete guide to report generation
+  </Card>
+  <Card title="Report Output" icon="folder-open" href="/output/pdf-reports">
+    Report structure and sections
+  </Card>
+  <Card title="Risk Engine" icon="chart-line" href="/modules/risk-engine">
+    How risk data populates reports
+  </Card>
+  <Card title="Database" icon="database" href="/modules/database">
+    How scan data is retrieved for reports
+  </Card>
+</CardGroup>

@@ -1,0 +1,261 @@
+---
+title: "Scanner Module"
+description: "Network reconnaissance with Nmap for port scanning, OS detection, and service enumeration"
+icon: "radar"
+---
+
+## Overview
+
+The Scanner module (`modules/scanner.py`) provides comprehensive network reconnaissance capabilities using Nmap. It handles TCP/UDP port scanning, operating system fingerprinting, service detection, and version enumeration.
+
+## Scanner Class
+
+The `Scanner` class is defined at `scanner.py:13` and serves as the main interface for network scanning operations.
+
+### Initialization
+
+```python scanner.py:14-24
+class Scanner:
+    def __init__(self, target):
+        """Initialize scanner with target"""
+        self.target = target
+        self.nm = nmap.PortScanner()
+        self.scan_results = {
+            'target': target,
+            'os_detection': 'Unknown',
+            'ports': [],
+            'services': [],
+            'scan_time': None
+        }
+```
+
+<ParamField path="target" type="string" required>
+  Target IP address or domain name to scan
+</ParamField>
+
+## Key Methods
+
+### validate_target()
+
+Validates that the target IP or domain is reachable before scanning.
+
+```python scanner.py:26-35
+def validate_target(self):
+    """Validate target IP or domain"""
+    try:
+        import socket
+        socket.gethostbyname(self.target)
+        return True
+    except socket.gaierror:
+        print(f"[✗] Invalid target: {self.target}")
+        return False
+```
+
+### detect_os()
+
+Detects the target's operating system using Nmap's OS fingerprinting or TTL analysis.
+
+```python scanner.py:37-79
+def detect_os(self):
+    """Detect operating system using Nmap"""
+    # Run OS detection with Nmap (requires root/sudo)
+    self.nm.scan(self.target, arguments='-O -Pn')
+    
+    # Fallback: Try using TTL values
+    # TTL <= 64: Linux/Unix
+    # TTL <= 128: Windows
+```
+
+<Note>
+OS detection requires root/sudo privileges for Nmap's advanced fingerprinting features.
+</Note>
+
+**Detection Methods:**
+1. **Nmap OS Fingerprinting** (`-O` flag): Most accurate, requires sudo
+2. **TTL Analysis** (fallback): Less accurate but works without elevated privileges
+
+### scan_all_ports()
+
+Performs comprehensive TCP and UDP port scanning with service version detection.
+
+```python scanner.py:81-140
+def scan_all_ports(self):
+    """Perform comprehensive port scan"""
+    # Phase 1: Scan top 1000 TCP ports
+    self.nm.scan(self.target, arguments='-sS -sV -T4 -Pn --top-ports 1000')
+    
+    # Phase 2: Scan common UDP ports
+    self.nm.scan(self.target, arguments='-sU -Pn --top-ports 20')
+```
+
+**Scan Phases:**
+
+<Steps>
+  <Step title="Phase 1: TCP Scanning">
+    Scans top 1000 TCP ports with service version detection using `-sS -sV -T4 -Pn --top-ports 1000`
+  </Step>
+  <Step title="Phase 2: UDP Scanning">
+    Scans top 20 UDP ports using `-sU -Pn --top-ports 20` for faster execution
+  </Step>
+</Steps>
+
+**Port Data Structure:**
+
+```python
+port_data = {
+    'port': 80,
+    'protocol': 'tcp',
+    'state': 'open',
+    'service': 'http',
+    'version': 'Apache 2.4.41',
+    'extrainfo': '(Ubuntu)'
+}
+```
+
+### enumerate_services()
+
+Extracts detailed service information from discovered open ports.
+
+```python scanner.py:142-160
+def enumerate_services(self):
+    """Extract detailed service information"""
+    services = []
+    for port_data in self.scan_results['ports']:
+        service_info = {
+            'port': port_data['port'],
+            'protocol': port_data['protocol'],
+            'service': port_data['service'],
+            'version': port_data['version'],
+            'product': port_data.get('product', ''),
+            'extrainfo': port_data.get('extrainfo', '')
+        }
+        services.append(service_info)
+    return services
+```
+
+### run_full_scan()
+
+Orchestrates the complete scanning workflow.
+
+```python scanner.py:180-195
+def run_full_scan(self):
+    """Execute complete scanning workflow"""
+    # 1. Validate target
+    if not self.validate_target():
+        return None
+    
+    # 2. Detect OS
+    self.detect_os()
+    
+    # 3. Scan ports
+    self.scan_all_ports()
+    
+    # 4. Enumerate services
+    self.enumerate_services()
+    
+    return self.scan_results
+```
+
+## Usage Example
+
+```python
+from modules.scanner import Scanner
+
+# Initialize scanner
+scanner = Scanner("192.168.1.100")
+
+# Run full scan
+results = scanner.run_full_scan()
+
+# Access results
+print(f"OS: {results['os_detection']}")
+print(f"Open ports: {len(results['ports'])}")
+for port in results['ports']:
+    print(f"Port {port['port']}/{port['protocol']}: {port['service']} {port['version']}")
+```
+
+## Nmap Arguments
+
+The Scanner module uses these Nmap arguments:
+
+| Argument | Purpose |
+|----------|----------|
+| `-sS` | TCP SYN scan (stealth) |
+| `-sV` | Service version detection |
+| `-sU` | UDP scan |
+| `-O` | OS detection |
+| `-Pn` | Skip ping (assume host is up) |
+| `-T4` | Timing template (aggressive) |
+| `--top-ports N` | Scan N most common ports |
+
+## Output Format
+
+```json
+{
+  "target": "192.168.1.100",
+  "os_detection": "Linux 3.2 - 4.9 (Accuracy: 95%)",
+  "ports": [
+    {
+      "port": 22,
+      "protocol": "tcp",
+      "state": "open",
+      "service": "ssh",
+      "version": "OpenSSH 7.4",
+      "extrainfo": "protocol 2.0"
+    },
+    {
+      "port": 80,
+      "protocol": "tcp",
+      "state": "open",
+      "service": "http",
+      "version": "Apache 2.4.41",
+      "extrainfo": "(Ubuntu)"
+    }
+  ],
+  "services": [...],
+  "scan_time": 45.3
+}
+```
+
+## Performance
+
+- **Top 1000 ports**: ~30-60 seconds
+- **Top 20 UDP ports**: ~10-20 seconds
+- **Full scan (all 65535 ports)**: 5-15 minutes
+
+<Tip>
+Use `-T4` timing for faster scans on reliable networks. For stealthy scans, use `-T2` or `-T3`.
+</Tip>
+
+## Error Handling
+
+The Scanner module handles these common errors:
+
+<AccordionGroup>
+  <Accordion title="Target Unreachable">
+    Returns `None` if target cannot be resolved or reached. Check network connectivity and DNS resolution.
+  </Accordion>
+  <Accordion title="Permission Denied">
+    Nmap requires sudo for SYN scans (`-sS`) and OS detection (`-O`). Run with `sudo python3 main.py -t <target>`.
+  </Accordion>
+  <Accordion title="Scan Timeout">
+    Increase timeout in config.json or reduce number of ports scanned.
+  </Accordion>
+</AccordionGroup>
+
+## Related Documentation
+
+<CardGroup cols={2}>
+  <Card title="CLI Options" icon="terminal" href="/commands/options">
+    Command-line flags for scanner configuration
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration/scan-options">
+    Scanner settings in config.json
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/troubleshooting/permissions">
+    Solving permission and Nmap issues
+  </Card>
+  <Card title="Basic Scan Guide" icon="book" href="/guides/basic-scan">
+    Step-by-step scanning tutorial
+  </Card>
+</CardGroup>

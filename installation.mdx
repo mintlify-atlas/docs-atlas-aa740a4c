@@ -1,0 +1,309 @@
+---
+title: Installation
+description: Complete installation guide for AutoPentestX with automated setup script for Kali Linux and Ubuntu systems.
+---
+
+## Prerequisites
+
+Before installing AutoPentestX, ensure your system meets these requirements:
+
+<Warning>
+AutoPentestX is designed for **Linux systems only**. Kali Linux and Ubuntu are officially supported.
+</Warning>
+
+### System Requirements
+
+- **Operating System**: Kali Linux, Ubuntu 20.04+, or compatible Debian-based Linux
+- **Python**: Version 3.8 or higher
+- **Privileges**: Root/sudo access for installing dependencies
+- **Disk Space**: Minimum 500MB free space
+- **Network**: Internet connection for package installation
+
+### Required Tools
+
+The installation script will automatically install these tools:
+
+- **Nmap** - Network port scanner
+- **Nikto** - Web server vulnerability scanner  
+- **SQLMap** - SQL injection detection tool
+- **Python 3 + pip** - Python runtime and package manager
+- **Git** - Version control (for cloning repository)
+
+### Optional Tools
+
+- **Metasploit Framework** - For exploit simulation features (installer will prompt)
+
+## Automated Installation
+
+The easiest way to install AutoPentestX is using the provided installation script.
+
+<Steps>
+  <Step title="Clone the Repository">
+    Download AutoPentestX from GitHub:
+
+    ```bash
+    git clone https://github.com/yourusername/AutoPentestX.git
+    cd AutoPentestX
+    ```
+  </Step>
+
+  <Step title="Run the Installer">
+    Execute the installation script (do NOT use sudo):
+
+    ```bash
+    chmod +x install.sh
+    ./install.sh
+    ```
+
+    <Note>
+    The script should **not** be run as root. It will prompt for your password when sudo is needed.
+    </Note>
+  </Step>
+
+  <Step title="Review Installation Output">
+    The installer performs these operations:
+
+    - Updates system package lists
+    - Installs system dependencies (nmap, nikto, sqlmap)
+    - Optionally installs Metasploit Framework
+    - Creates Python virtual environment
+    - Installs Python dependencies from requirements.txt
+    - Creates project directories (reports, logs, database, exploits)
+    - Sets proper file permissions
+    - Tests module imports and database initialization
+  </Step>
+
+  <Step title="Confirm Installation">
+    When installation completes successfully, you'll see:
+
+    ```bash
+    ╔═══════════════════════════════════════════════════════════════╗
+    ║              Installation Completed Successfully!             ║
+    ╚═══════════════════════════════════════════════════════════════╝
+    ```
+  </Step>
+</Steps>
+
+## Installation Script Details
+
+Here's what the `install.sh` script does under the hood:
+
+### Package Installation
+
+```bash
+# System packages installed
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip python3-venv
+sudo apt-get install -y nmap nikto sqlmap git curl wget
+```
+
+### Virtual Environment Setup
+
+```bash
+# Creates isolated Python environment
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### Python Dependencies
+
+From `requirements.txt`:
+
+```txt
+python-nmap==0.7.1
+requests>=2.31.0
+reportlab>=4.0.4
+sqlparse>=0.4.4
+```
+
+### Directory Structure
+
+```bash
+# Created automatically
+mkdir -p reports logs database exploits
+```
+
+## Metasploit Installation
+
+During installation, you'll be prompted to install Metasploit Framework:
+
+```bash
+Do you want to install Metasploit? (y/n)
+```
+
+<Note>
+Metasploit is **optional** but recommended for full exploit simulation capabilities. Installation may take 15-30 minutes.
+</Note>
+
+If you choose to install Metasploit:
+
+```bash
+curl https://raw.githubusercontent.com/rapid7/metasploit-omnibus/master/config/templates/metasploit-framework-wrappers/msfupdate.erb > msfinstall
+chmod 755 msfinstall
+sudo ./msfinstall
+```
+
+## Post-Installation Testing
+
+The installer automatically runs tests to verify the installation:
+
+### Python Module Test
+
+```bash
+python3 -c "
+import nmap
+import requests
+from reportlab.lib.pagesizes import letter
+import sqlite3
+print('✓ All Python modules imported successfully')
+"
+```
+
+### Database Test
+
+```bash
+python3 -c "
+from modules.database import Database
+db = Database()
+db.close()
+print('✓ Database initialized successfully')
+"
+```
+
+## Manual Installation
+
+If you prefer to install components manually:
+
+<Steps>
+  <Step title="Install System Packages">
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y python3 python3-pip python3-venv \
+                            nmap nikto sqlmap git curl wget
+    ```
+  </Step>
+
+  <Step title="Create Virtual Environment">
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+  </Step>
+
+  <Step title="Install Python Dependencies">
+    ```bash
+    pip install --upgrade pip
+    pip install python-nmap==0.7.1 requests>=2.31.0 \
+                reportlab>=4.0.4 sqlparse>=0.4.4
+    ```
+  </Step>
+
+  <Step title="Create Directories">
+    ```bash
+    mkdir -p reports logs database exploits
+    ```
+  </Step>
+
+  <Step title="Set Permissions">
+    ```bash
+    chmod +x main.py
+    chmod +x autopentestx.sh
+    chmod -R 755 modules/
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Permission Denied Errors
+
+If you see permission errors:
+
+```bash
+# Ensure scripts are executable
+chmod +x install.sh main.py autopentestx.sh
+```
+
+### Python Module Import Errors
+
+If modules fail to import:
+
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Reinstall dependencies
+pip install --force-reinstall -r requirements.txt
+```
+
+### Missing System Tools
+
+If Nmap, Nikto, or SQLMap are not found:
+
+```bash
+# Verify installation
+which nmap nikto sqlmap
+
+# Reinstall if missing
+sudo apt-get install --reinstall nmap nikto sqlmap
+```
+
+### Database Initialization Failed
+
+If database tests fail:
+
+```bash
+# Remove existing database
+rm -f database/autopentestx.db
+
+# Test database module
+python3 -c "from modules.database import Database; db = Database(); db.close()"
+```
+
+### Metasploit Not Found
+
+If Metasploit commands fail:
+
+```bash
+# Check if installed
+which msfconsole
+
+# AutoPentestX will work without Metasploit
+# but exploitation features will be limited
+```
+
+<Warning>
+If you skip Metasploit installation, use the `--skip-exploit` flag when running scans to avoid errors.
+</Warning>
+
+## Verification
+
+Verify your installation is complete:
+
+<CodeGroup>
+
+```bash Activate Environment
+source venv/bin/activate
+```
+
+```bash Check Version
+python3 main.py --version
+```
+
+```bash View Help
+python3 main.py --help
+```
+
+```bash Test Localhost
+python3 main.py -t 127.0.0.1 --skip-web --skip-exploit
+```
+
+</CodeGroup>
+
+## Next Steps
+
+<Card title="Run Your First Scan" icon="rocket" href="/quickstart">
+  Learn how to perform your first security assessment with AutoPentestX
+</Card>

@@ -1,0 +1,465 @@
+---
+title: 'Web Vulnerability Scanning'
+description: 'Understanding Nikto and SQLMap integration for web application security testing'
+icon: 'globe'
+---
+
+AutoPentestX includes powerful web vulnerability scanning capabilities through Nikto and SQLMap integration. This guide explains how these tools work and how to interpret their findings.
+
+## Web Service Detection
+
+AutoPentestX automatically detects web services during the port scanning phase:
+
+```text Terminal Output
+[PHASE 2] ▶ Network reconnaissance in progress...
+──────────────────────────────────────────────────────────────────
+[✓] Port 80/tcp - http (Apache 2.4.41)
+[✓] Port 443/tcp - ssl/http (nginx 1.18.0)
+[✓] Port 8080/tcp - http-proxy (Jetty 9.4)
+
+[PHASE 3] ▶ Vulnerability analysis initiated...
+──────────────────────────────────────────────────────────────────
+[✓] Detected web service: http://192.168.1.100:80
+[✓] Detected web service: https://192.168.1.100:443
+[✓] Detected web service: http://192.168.1.100:8080
+```
+
+### Detection Logic
+
+From `modules/vuln_scanner.py:26-43`, AutoPentestX identifies web services by:
+
+1. **Common Web Ports**: 80, 443, 8080, 8443, 8000, 8888, 3000, 5000
+2. **Service Names**: http, https, ssl/http, http-proxy, http-alt
+3. **Protocol Detection**: Automatically selects HTTP or HTTPS based on port and service info
+
+<Note>
+  Web scanning is skipped when using the `--skip-web` flag, reducing scan time by 50-70%.
+</Note>
+
+## Nikto Web Scanner
+
+Nikto performs comprehensive web server and application vulnerability scanning.
+
+### What Nikto Scans For
+
+<AccordionGroup>
+
+<Accordion title="Server Configuration Issues">
+  - Outdated server versions
+  - Dangerous HTTP methods enabled (PUT, DELETE, TRACE)
+  - Default files and scripts
+  - Insecure headers
+  - Missing security headers (X-Frame-Options, CSP, etc.)
+</Accordion>
+
+<Accordion title="Common Vulnerabilities">
+  - Known CVEs for detected software
+  - Directory traversal issues
+  - Cross-Site Scripting (XSS) indicators
+  - Information disclosure
+  - Authentication bypass methods
+</Accordion>
+
+<Accordion title="Dangerous Files & Directories">
+  - Administrative interfaces
+  - Backup files (.bak, .old, .tar.gz)
+  - Configuration files
+  - Database dumps
+  - Source code files
+</Accordion>
+
+<Accordion title="SSL/TLS Security">
+  - Weak cipher suites
+  - Expired certificates
+  - Self-signed certificates
+  - Protocol vulnerabilities
+</Accordion>
+
+</AccordionGroup>
+
+### Nikto Scan Execution
+
+Nikto runs with these parameters (from `modules/vuln_scanner.py:57-64`):
+
+```bash Nikto Command
+nikto -h http://target:port \
+      -Format json \
+      -output logs/nikto_target_timestamp.json \
+      -Tuning 123456789 \
+      -timeout 10
+```
+
+**Parameter Breakdown:**
+- `-h`: Target URL
+- `-Format json`: Output in JSON format for parsing
+- `-Tuning 123456789`: Enable all test categories
+- `-timeout 10`: 10-second timeout per request
+
+### Sample Nikto Output
+
+```text Terminal Output
+[*] Running Nikto scan on http://192.168.1.100:80...
++ Target IP:          192.168.1.100
++ Target Hostname:    192.168.1.100
++ Target Port:        80
++ Start Time:         2026-03-11 14:22:10
++ Server: Apache/2.4.41 (Ubuntu)
++ The anti-clickjacking X-Frame-Options header is not present.
++ The X-Content-Type-Options header is not set.
++ Root page / redirects to: login.php
++ Apache/2.4.41 appears to be outdated (current is at least 2.4.57)
++ /config.php: PHP Config file may contain database IDs and passwords.
++ /backup/: Directory indexing found.
++ /admin/: Admin login page/section found.
++ 8 requests: 0 error(s) and 7 item(s) reported on remote host
+[✓] Nikto scan completed: 7 vulnerabilities found
+```
+
+### Understanding Nikto Findings
+
+Nikto results are categorized by severity:
+
+<Tabs>
+  <Tab title="High Severity">
+    **Immediate Action Required**
+
+    - Exposed admin interfaces without authentication
+    - Directory traversal vulnerabilities
+    - Known CVEs with public exploits
+    - Default credentials accepted
+
+    Example:
+    ```text
+    [HIGH] /admin/ allows directory listing and contains sensitive files
+    [HIGH] Default credentials accepted: admin/admin on /manager/html
+    ```
+  </Tab>
+
+  <Tab title="Medium Severity">
+    **Should Be Fixed**
+
+    - Outdated software versions
+    - Information disclosure
+    - Missing security headers
+    - Unnecessary HTTP methods enabled
+
+    Example:
+    ```text
+    [MEDIUM] Server version disclosed: Apache/2.4.41 (Ubuntu)
+    [MEDIUM] X-Frame-Options header not set (clickjacking risk)
+    [MEDIUM] HTTP TRACE method is enabled (XST attack possible)
+    ```
+  </Tab>
+
+  <Tab title="Low/Info">
+    **Good to Know**
+
+    - Server configuration details
+    - Detected technologies
+    - Common files found
+    - Recommendations
+
+    Example:
+    ```text
+    [INFO] /robots.txt found - contains 15 entries
+    [INFO] Server uses PHP 7.4.3
+    [LOW] Cookie created without 'secure' flag
+    ```
+  </Tab>
+</Tabs>
+
+## SQLMap Injection Scanner
+
+SQLMap automatically detects and exploits SQL injection vulnerabilities.
+
+### How SQLMap Works
+
+AutoPentestX runs SQLMap with safe, fast parameters (from `modules/vuln_scanner.py:141-152`):
+
+```bash SQLMap Command
+sqlmap -u http://target:port \
+       --batch \
+       --crawl=2 \
+       --level=1 \
+       --risk=1 \
+       --random-agent \
+       --timeout=30 \
+       --retries=2 \
+       --threads=3
+```
+
+**Parameter Breakdown:**
+- `-u`: Target URL
+- `--batch`: Non-interactive mode (auto-accept defaults)
+- `--crawl=2`: Automatically crawl and test 2 levels deep
+- `--level=1`: Test level (1=basic, 5=comprehensive)
+- `--risk=1`: Risk level (1=safe, 3=may cause damage)
+- `--random-agent`: Randomize User-Agent header
+- `--timeout=30`: 30-second timeout per request
+- `--threads=3`: Use 3 concurrent threads
+
+<Warning>
+  SQLMap is configured with `--risk=1` to prevent destructive queries. It will NOT attempt UPDATE, DELETE, or DROP statements.
+</Warning>
+
+### SQL Injection Types Detected
+
+<CardGroup cols={2}>
+
+<Card title="Boolean-based Blind" icon="toggle-on">
+  Exploits true/false responses to extract data one bit at a time.
+
+  ```sql
+  AND 1=1 -- True
+  AND 1=2 -- False
+  ```
+</Card>
+
+<Card title="Time-based Blind" icon="clock">
+  Uses database delays to infer information.
+
+  ```sql
+  AND SLEEP(5)
+  WAITFOR DELAY '0:0:5'
+  ```
+</Card>
+
+<Card title="Error-based" icon="exclamation-triangle">
+  Triggers database errors that leak information.
+
+  ```sql
+  AND EXTRACTVALUE(1,CONCAT(0x7e,version()))
+  ```
+</Card>
+
+<Card title="UNION Query-based" icon="layer-group">
+  Appends UNION SELECT to retrieve arbitrary data.
+
+  ```sql
+  UNION SELECT 1,2,username,password,5 FROM users
+  ```
+</Card>
+
+</CardGroup>
+
+### Sample SQLMap Output
+
+```text Terminal Output
+[*] Scanning for SQL injection on http://192.168.1.100:80...
+[14:23:15] [INFO] testing 'AND boolean-based blind - WHERE or HAVING clause'
+[14:23:16] [INFO] GET parameter 'id' appears to be 'AND boolean-based blind - WHERE or HAVING clause' injectable
+[14:23:18] [INFO] heuristic (extended) test shows that the back-end DBMS could be 'MySQL'
+[14:23:22] [INFO] GET parameter 'id' is 'Generic UNION query (NULL) - 1 to 20 columns' injectable
+GET parameter 'id' is vulnerable. Do you want to keep testing the others (if any)? [y/N] N
+sqlmap identified the following injection point(s) with a total of 47 HTTP(s) requests:
+---
+Parameter: id (GET)
+    Type: boolean-based blind
+    Title: AND boolean-based blind - WHERE or HAVING clause
+    Payload: id=1 AND 5234=5234
+
+    Type: UNION query
+    Title: Generic UNION query (NULL) - 5 columns
+    Payload: id=1 UNION ALL SELECT NULL,NULL,CONCAT(0x7176706a71,0x72644d6c),NULL,NULL-- -
+---
+back-end DBMS: MySQL >= 5.0
+
+[✓] SQL injection scan completed: 1 vulnerability found
+```
+
+### Understanding SQLMap Results
+
+<Steps>
+
+<Step title="Identify Vulnerable Parameters">
+  SQLMap lists all injectable parameters:
+
+  ```text
+  Parameter: id (GET)
+  Parameter: username (POST)
+  Parameter: search (Cookie)
+  ```
+
+  **Location matters:**
+  - GET: URL parameters
+  - POST: Form data
+  - Cookie: Cookie values
+  - Header: HTTP headers
+</Step>
+
+<Step title="Review Injection Types">
+  Each parameter shows which injection techniques work:
+
+  ```text
+  Type: boolean-based blind
+  Type: error-based
+  Type: UNION query
+  Type: time-based blind
+  ```
+
+  **More types = Higher exploitability**
+</Step>
+
+<Step title="Check Database Detection">
+  SQLMap identifies the backend database:
+
+  ```text
+  back-end DBMS: MySQL >= 5.0.12
+  back-end DBMS: PostgreSQL 13.2
+  back-end DBMS: Microsoft SQL Server 2019
+  ```
+
+  This information helps prioritize remediation.
+</Step>
+
+<Step title="Risk Assessment">
+  SQL injection is **ALWAYS HIGH SEVERITY**:
+
+  - Can extract entire database
+  - May allow authentication bypass
+  - Could enable remote code execution
+  - Enables data manipulation
+</Step>
+
+</Steps>
+
+## Web Vulnerability Storage
+
+All web vulnerabilities are stored in the SQLite database:
+
+### Database Schema
+
+```sql
+CREATE TABLE web_vulnerabilities (
+    id INTEGER PRIMARY KEY,
+    scan_id INTEGER,
+    url TEXT,
+    type TEXT,  -- 'nikto' or 'sql_injection'
+    severity TEXT,
+    description TEXT,
+    parameter TEXT,  -- For SQLMap findings
+    injection_type TEXT,  -- For SQLMap findings
+    created_at TIMESTAMP
+);
+```
+
+### Query Web Findings
+
+```bash View All Web Vulnerabilities
+sqlite3 database/autopentestx.db \
+  "SELECT url, type, severity, description 
+   FROM web_vulnerabilities 
+   WHERE scan_id = 1 
+   ORDER BY severity DESC;"
+```
+
+```bash Filter SQL Injection Only
+sqlite3 database/autopentestx.db \
+  "SELECT url, parameter, injection_type 
+   FROM web_vulnerabilities 
+   WHERE scan_id = 1 AND type = 'sql_injection';"
+```
+
+## Skipping Web Scans
+
+Use `--skip-web` to disable Nikto and SQLMap:
+
+```bash
+python3 main.py -t 192.168.1.100 --skip-web
+```
+
+**When to Skip:**
+- ✅ Target has no web services
+- ✅ Time-constrained scans
+- ✅ Network infrastructure testing only
+- ✅ Non-web application assessment
+
+**Console Output:**
+```text
+[PHASE 3] Vulnerability analysis... [SKIPPED BY OPERATOR]
+```
+
+**Impact:**
+- Reduces scan time by 10-15 minutes
+- Report will show 0 web vulnerabilities
+- No Nikto logs generated
+- No SQLMap results
+
+## Manual Web Testing
+
+After AutoPentestX identifies web services, you can perform manual testing:
+
+### Run Nikto Manually
+
+```bash Full Nikto Scan
+nikto -h http://192.168.1.100 -C all -Tuning x
+```
+
+### Run SQLMap Manually
+
+```bash Deep SQLMap Scan
+sqlmap -u "http://192.168.1.100/page?id=1" \
+       --level=5 \
+       --risk=3 \
+       --dbs \
+       --tables \
+       --dump
+```
+
+<Warning>
+  `--risk=3` may execute destructive queries. Only use in authorized lab environments.
+</Warning>
+
+### Test Specific Parameters
+
+```bash POST Parameter Testing
+sqlmap -u "http://192.168.1.100/login" \
+       --data="username=admin&password=test" \
+       --method=POST \
+       --batch
+```
+
+## Interpreting PDF Report Findings
+
+Web vulnerabilities appear in multiple report sections:
+
+### Executive Summary
+
+```text
+Web Vulnerabilities: 7
+SQL Injection Points: 1
+```
+
+### Vulnerabilities Table
+
+| Port | Vulnerability | Severity | CVE ID |
+|------|---------------|----------|--------|
+| 80   | SQL Injection - parameter 'id' | HIGH | N/A |
+| 80   | Missing X-Frame-Options header | MEDIUM | N/A |
+| 443  | Outdated Apache 2.4.41 | MEDIUM | CVE-2021-44790 |
+
+### Recommendations
+
+**HIGH Priority:**
+- ✅ Remediate SQL injection in parameter 'id'
+- ✅ Implement parameterized queries
+- ✅ Add input validation and sanitization
+
+**MEDIUM Priority:**
+- ✅ Add security headers (X-Frame-Options, CSP, HSTS)
+- ✅ Update Apache to latest version
+- ✅ Disable directory listing
+
+## Next Steps
+
+<CardGroup cols={2}>
+
+<Card title="Exploitation" icon="bomb" href="/guides/exploitation">
+  Learn how AutoPentestX matches exploits to vulnerabilities
+</Card>
+
+<Card title="Report Analysis" icon="file-pdf" href="/guides/reports">
+  Deep dive into PDF report structure and recommendations
+</Card>
+
+</CardGroup>

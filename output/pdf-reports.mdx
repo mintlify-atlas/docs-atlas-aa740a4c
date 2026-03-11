@@ -1,0 +1,291 @@
+---
+title: 'PDF Reports'
+description: 'Generate comprehensive professional penetration testing reports'
+icon: 'file-pdf'
+---
+
+## Overview
+
+AutoPentestX automatically generates professional PDF reports using ReportLab after each scan completes. These reports provide a comprehensive overview of all findings, vulnerabilities, and recommendations in a format suitable for stakeholders and compliance purposes.
+
+## Report Structure
+
+Each PDF report contains the following sections:
+
+<Accordion title="Cover Page">
+  Contains essential metadata about the assessment:
+  - **Target System**: IP address or hostname
+  - **Scan ID**: Unique identifier for database correlation
+  - **Report Date & Time**: When the scan was conducted
+  - **Prepared By**: Tester name (default: AutoPentestX Team)
+  - **Confidentiality Notice**: Warning about sensitive information
+</Accordion>
+
+<Accordion title="Executive Summary">
+  High-level overview for decision-makers:
+  - Overall risk level with color-coded severity
+  - Total vulnerabilities identified
+  - Critical/High risk item count
+  - Web vulnerability and SQL injection statistics
+  - Critical finding warnings for HIGH/CRITICAL risk systems
+</Accordion>
+
+<Accordion title="Scan Details">
+  Technical information about the assessment:
+  - Target IP/hostname
+  - Operating system detection results
+  - Scan duration (in seconds)
+  - Total open ports discovered
+  - Scan methodology (Nmap, Nikto, SQLMap)
+</Accordion>
+
+<Accordion title="Open Ports and Services">
+  Comprehensive table of discovered network services:
+  - Port number
+  - Protocol (TCP/UDP)
+  - State (open/filtered)
+  - Service name
+  - Version information (truncated to 30 characters)
+  
+  *Note: Limited to first 20 ports for readability*
+</Accordion>
+
+<Accordion title="Vulnerabilities Identified">
+  Combined table of all vulnerabilities:
+  - Port number
+  - Vulnerability name (truncated to 40 characters)
+  - Severity level (CRITICAL/HIGH/MEDIUM/LOW)
+  - CVE identifier (if applicable)
+  
+  Includes both:
+  - Regular vulnerabilities from service scanning
+  - CVE database lookup results (limited to 15 CVEs)
+  
+  *Total vulnerability display capped at 25 for space considerations*
+</Accordion>
+
+<Accordion title="Risk Assessment">
+  Detailed risk analysis:
+  - Overall risk level determination
+  - Total risk score calculation
+  - Average risk per port metric
+  - High risk items breakdown (up to 10 items)
+  - Port-specific risk scores (0-10 scale)
+</Accordion>
+
+<Accordion title="Exploitation Assessment">
+  Safe-mode exploitation findings:
+  - Total exploits identified
+  - Exploitation attempt results (up to 10)
+  - Status indicators (SIMULATED/SKIPPED/SUCCESS)
+  - Exploit descriptions
+  
+  **Important**: All exploitation is conducted in SAFE MODE - no actual exploitation occurs.
+</Accordion>
+
+<Accordion title="Security Recommendations">
+  Prioritized remediation guidance:
+  - **CRITICAL Priority**: Immediate action items
+  - **HIGH Priority**: Important security fixes
+  - **MEDIUM Priority**: Recommended improvements
+  - **LOW Priority**: Best practice enhancements
+  
+  Each recommendation includes:
+  - Action description
+  - Implementation guidance
+  
+  *Limited to 5 recommendations per priority level*
+</Accordion>
+
+<Accordion title="Conclusion">
+  Final assessment summary:
+  - Overall security posture evaluation
+  - Prioritization guidance
+  - Regular assessment recommendations
+  - Important validation notes
+</Accordion>
+
+<Accordion title="Legal Disclaimer">
+  Standard legal protections:
+  - Educational/authorized use statement
+  - Liability disclaimers
+  - Ethical use requirements
+</Accordion>
+
+## Report Generation
+
+### Automatic Generation
+
+Reports are automatically generated after each scan:
+
+```bash
+python3 main.py -t 192.168.1.100
+```
+
+Output will include:
+
+```
+[STEP 7] Generating PDF Report...
+============================================================
+AutoP entestX - PDF Report Generation
+============================================================
+Target: 192.168.1.100
+Generating report: reports/AutoPentestX_Report_192_168_1_100_20251130_143220.pdf
+
+[*] Adding cover page...
+[*] Adding executive summary...
+[*] Adding scan details...
+[*] Adding open ports table...
+[*] Adding vulnerabilities...
+[*] Adding risk assessment...
+[*] Adding exploitation results...
+[*] Adding recommendations...
+[*] Adding conclusion...
+[*] Adding disclaimer...
+[*] Building PDF document...
+
+============================================================
+PDF REPORT GENERATED SUCCESSFULLY
+============================================================
+Report saved to: reports/AutoPentestX_Report_192_168_1_100_20251130_143220.pdf
+File size: 245.67 KB
+============================================================
+```
+
+### Report Location
+
+All reports are saved to the `reports/` directory with the naming convention:
+
+```
+AutoPentestX_Report_{target}_{timestamp}.pdf
+```
+
+**Example**: `AutoPentestX_Report_192_168_1_100_20251130_143220.pdf`
+
+## Customization
+
+### Custom Tester Name
+
+Modify the report generator in `modules/pdf_report.py:pdf_report.py:453`:
+
+<CodeGroup>
+```python Default
+generator.generate_report(
+    scan_data, vulnerabilities, cves, 
+    web_vulns, sql_vulns, risk_summary, 
+    exploit_results
+)
+```
+
+```python Custom Name
+generator.generate_report(
+    scan_data, vulnerabilities, cves,
+    web_vulns, sql_vulns, risk_summary,
+    exploit_results,
+    tester_name="Your Security Team"
+)
+```
+</CodeGroup>
+
+### Custom Styling
+
+The PDF uses custom styles defined in `create_custom_styles()` at `modules/pdf_report.py:36-92`:
+
+- **CustomTitle**: 24pt Helvetica-Bold, centered
+- **SectionHeading**: 16pt Helvetica-Bold
+- **Risk Styles**: Color-coded by severity
+  - CriticalRisk: Red
+  - HighRisk: Orange-red
+  - MediumRisk: Orange
+  - LowRisk: Blue
+
+## Risk Level Colors
+
+The report uses a consistent color scheme for risk visualization:
+
+| Risk Level | Color | Usage |
+|------------|-------|-------|
+| CRITICAL | Red | Immediate action required |
+| HIGH | Orange-red | Priority remediation |
+| MEDIUM | Orange | Recommended fixes |
+| LOW | Blue | Best practices |
+| MINIMAL | Green | Informational |
+| UNKNOWN | Grey | Unable to determine |
+
+<Info>
+Color-coding is applied throughout the report in executive summaries, vulnerability tables, and risk assessment sections.
+</Info>
+
+## Report Sections API
+
+### Individual Section Generation
+
+You can generate specific report sections programmatically:
+
+```python
+from modules.pdf_report import PDFReportGenerator
+
+generator = PDFReportGenerator(target="192.168.1.100", scan_id=1)
+
+# Add individual sections
+generator.add_cover_page(tester_name="Security Team")
+generator.add_executive_summary(risk_summary_data)
+generator.add_scan_details(scan_data)
+generator.add_open_ports_table(ports_data)
+generator.add_vulnerabilities_table(vulnerabilities, cves)
+generator.add_risk_assessment(risk_summary)
+generator.add_exploitation_results(exploit_results)
+generator.add_recommendations(recommendations)
+generator.add_conclusion()
+generator.add_disclaimer()
+
+# Build final PDF
+generator.doc.build(generator.story)
+```
+
+## File Size Considerations
+
+<Note>
+  Typical report sizes range from 150-500 KB depending on:
+  - Number of vulnerabilities discovered
+  - Port count
+  - CVE entries
+  - Recommendation length
+</Note>
+
+## Best Practices
+
+1. **Review Before Distribution**: Always review generated reports for accuracy
+2. **Secure Storage**: Store reports in encrypted locations with restricted access
+3. **Version Control**: Use scan IDs to correlate reports with database entries
+4. **Timely Delivery**: Generate and deliver reports promptly after assessments
+5. **Confidentiality**: Respect the CONFIDENTIAL markings on all reports
+
+## Troubleshooting
+
+### Report Generation Fails
+
+If PDF generation encounters errors:
+
+```bash
+[✗] Error generating PDF report: [error message]
+```
+
+**Common solutions**:
+- Ensure the `reports/` directory exists and is writable
+- Verify ReportLab is installed: `pip3 install reportlab`
+- Check for sufficient disk space
+- Review traceback output for specific errors
+
+### Missing Data in Report
+
+If sections appear empty:
+- Verify scan completed successfully
+- Check that data structures are properly formatted
+- Ensure all required parameters are passed to `generate_report()`
+
+## Related Resources
+
+- [Database Queries](/output/database-queries) - Query scan data for custom reports
+- [Log Files](/output/logs) - Debugging report generation issues
+- [Risk Assessment](/core-features/risk-assessment) - Understanding risk calculation

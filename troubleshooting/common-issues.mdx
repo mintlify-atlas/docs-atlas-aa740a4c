@@ -1,0 +1,479 @@
+---
+title: 'Common Issues'
+description: 'Solutions to frequently encountered errors when using AutoPentestX'
+icon: 'triangle-exclamation'
+---
+
+## Installation Errors
+
+<AccordionGroup>
+  <Accordion title="Virtual Environment Not Found" icon="circle-xmark">
+    **Error Message:**
+    ```bash
+    bash: venv/bin/activate: No such file or directory
+    ```
+
+    **Cause:** The virtual environment was not created during installation or was deleted.
+
+    **Solution:**
+    <Steps>
+      <Step title="Recreate the virtual environment">
+        ```bash
+        python3 -m venv venv
+        ```
+      </Step>
+      <Step title="Activate the environment">
+        ```bash
+        source venv/bin/activate
+        ```
+      </Step>
+      <Step title="Reinstall dependencies">
+        ```bash
+        pip install -r requirements.txt
+        ```
+      </Step>
+    </Steps>
+
+    <Tip>
+      Always activate the virtual environment before running AutoPentestX to ensure all dependencies are available.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Module Import Errors" icon="circle-xmark">
+    **Error Message:**
+    ```python
+    ModuleNotFoundError: No module named 'nmap'
+    ImportError: No module named 'reportlab'
+    ```
+
+    **Cause:** Python dependencies were not installed or the virtual environment is not activated.
+
+    **Solution:**
+    <CodeGroup>
+    ```bash Virtual Environment
+    # Activate virtual environment first
+    source venv/bin/activate
+
+    # Reinstall all requirements
+    pip install -r requirements.txt
+    ```
+
+    ```bash Specific Modules
+    # Install missing modules individually
+    pip install python-nmap
+    pip install reportlab
+    pip install requests
+    pip install sqlparse
+    ```
+
+    ```bash Upgrade pip
+    # If installation fails, upgrade pip first
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    ```
+    </CodeGroup>
+
+    <Warning>
+      Never install packages globally with `sudo pip`. Always use the virtual environment to avoid system-wide conflicts.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Installation Script Fails" icon="circle-xmark">
+    **Error Message:**
+    ```bash
+    E: Unable to locate package nmap
+    E: Package 'nikto' has no installation candidate
+    ```
+
+    **Cause:** Package lists are outdated or repository issues.
+
+    **Solution:**
+    <Steps>
+      <Step title="Update package lists">
+        ```bash
+        sudo apt-get update
+        ```
+      </Step>
+      <Step title="Upgrade system packages">
+        ```bash
+        sudo apt-get upgrade
+        ```
+      </Step>
+      <Step title="Install packages manually">
+        ```bash
+        sudo apt-get install -y python3 python3-pip python3-venv nmap nikto sqlmap git curl wget
+        ```
+      </Step>
+      <Step title="Rerun installation script">
+        ```bash
+        ./install.sh
+        ```
+      </Step>
+    </Steps>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Runtime Errors
+
+<AccordionGroup>
+  <Accordion title="Target Not Reachable" icon="wifi-slash">
+    **Error Message:**
+    ```bash
+    [✗] Invalid target: 192.168.1.100
+    socket.gaierror: [Errno -2] Name or service not known
+    ```
+
+    **Cause:** Target IP/domain cannot be resolved or is unreachable.
+
+    **Solution:**
+    <Steps>
+      <Step title="Verify network connectivity">
+        ```bash
+        ping -c 4 192.168.1.100
+        ```
+      </Step>
+      <Step title="Check DNS resolution (for domains)">
+        ```bash
+        nslookup example.com
+        dig example.com
+        ```
+      </Step>
+      <Step title="Verify target format">
+        Make sure you're using a valid IP address or domain:
+        - Valid: `192.168.1.100`, `example.com`, `10.0.0.1`
+        - Invalid: `192.168.1.1000`, `example .com`, `http://example.com`
+      </Step>
+      <Step title="Check firewall rules">
+        ```bash
+        # Check if your firewall is blocking outbound connections
+        sudo ufw status
+        sudo iptables -L
+        ```
+      </Step>
+    </Steps>
+
+    <Warning>
+      Ensure you have network access to the target and that no firewall is blocking your scans.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Scan Returns No Results" icon="magnifying-glass-slash">
+    **Symptoms:**
+    - Scan completes but shows 0 open ports
+    - All ports appear filtered or closed
+    - PDF report has minimal information
+
+    **Possible Causes:**
+    1. Target has no open ports (unlikely)
+    2. Firewall is blocking scan traffic
+    3. Insufficient permissions (no sudo)
+    4. Network restrictions
+
+    **Solutions:**
+    <CodeGroup>
+    ```bash Run with sudo
+    # Many scan techniques require root privileges
+    sudo python3 main.py -t 192.168.1.100
+    ```
+
+    ```bash Test with localhost
+    # Verify AutoPentestX works correctly
+    python3 main.py -t 127.0.0.1 --skip-web --skip-exploit
+    ```
+
+    ```bash Check target manually
+    # Use nmap directly to test
+    sudo nmap -sS -p 1-1000 192.168.1.100
+    ```
+
+    ```bash Adjust scan parameters
+    # If behind firewall, use TCP connect scan
+    # Edit scanner.py to use '-sT' instead of '-sS'
+    nmap -sT -p 1-1000 192.168.1.100
+    ```
+    </CodeGroup>
+
+    <Tip>
+      Start with a quick scan on localhost (`127.0.0.1`) to verify AutoPentestX is working correctly before scanning remote targets.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Report Generation Fails" icon="file-pdf">
+    **Error Message:**
+    ```python
+    [✗] Report generation failed
+    ImportError: cannot import name 'ImageReader' from 'PIL'
+    ReportLabError: Unable to generate PDF
+    ```
+
+    **Cause:** PDF generation libraries are corrupted or missing dependencies.
+
+    **Solution:**
+    <Steps>
+      <Step title="Reinstall PDF libraries">
+        ```bash
+        pip install --upgrade reportlab pillow
+        ```
+      </Step>
+      <Step title="Install system dependencies">
+        ```bash
+        sudo apt-get install -y libjpeg-dev zlib1g-dev
+        ```
+      </Step>
+      <Step title="Verify installation">
+        ```bash
+        python3 -c "from reportlab.lib.pagesizes import letter; print('ReportLab OK')"
+        python3 -c "from PIL import Image; print('Pillow OK')"
+        ```
+      </Step>
+      <Step title="Check reports directory">
+        ```bash
+        # Ensure reports directory exists and is writable
+        ls -la reports/
+        chmod 755 reports/
+        ```
+      </Step>
+    </Steps>
+
+    <Note>
+      Even if report generation fails, scan data is still saved to the SQLite database in `database/autopentestx.db`.
+    </Note>
+  </Accordion>
+
+  <Accordion title="Database Errors" icon="database">
+    **Error Message:**
+    ```python
+    sqlite3.OperationalError: unable to open database file
+    sqlite3.DatabaseError: database disk image is malformed
+    ```
+
+    **Solutions:**
+    <CodeGroup>
+    ```bash Permissions Issue
+    # Fix database directory permissions
+    mkdir -p database
+    chmod 755 database/
+    ```
+
+    ```bash Corrupted Database
+    # Backup and recreate database
+    mv database/autopentestx.db database/autopentestx.db.bak
+    python3 -c "from modules.database import Database; db = Database(); db.close()"
+    ```
+
+    ```bash Disk Space
+    # Check available disk space
+    df -h .
+    # Clean up old reports if needed
+    rm -f reports/old_*.pdf
+    ```
+
+    ```bash Test Database
+    # Verify database works
+    python3 -c "
+from modules.database import Database
+try:
+    db = Database()
+    db.close()
+    print('✓ Database initialized successfully')
+except Exception as e:
+    print(f'✗ Database error: {e}')
+"
+    ```
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Keyboard Interrupt Handling" icon="keyboard">
+    **When pressing Ctrl+C during a scan:**
+
+    **Expected Behavior:**
+    ```bash
+    [!] MISSION ABORT - Operator initiated shutdown
+    ```
+
+    The scan will gracefully terminate and mark the status as "interrupted" in the database.
+
+    **If AutoPentestX hangs:**
+    <Steps>
+      <Step title="Force terminate">
+        Press `Ctrl+C` multiple times or use:
+        ```bash
+        # In another terminal
+        pkill -f "python3 main.py"
+        ```
+      </Step>
+      <Step title="Check for zombie processes">
+        ```bash
+        ps aux | grep -E "nmap|nikto|sqlmap"
+        # Kill any remaining processes
+        sudo pkill nmap
+        sudo pkill nikto
+        sudo pkill sqlmap
+        ```
+      </Step>
+    </Steps>
+
+    <Warning>
+      Some subprocesses (Nmap, Nikto, SQLMap) may continue running even after terminating AutoPentestX. Always verify they're stopped.
+    </Warning>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Tool-Specific Errors
+
+<AccordionGroup>
+  <Accordion title="Nmap Not Found" icon="network-wired">
+    **Error Message:**
+    ```bash
+    nmap.nmap.PortScannerError: 'nmap program was not found in path'
+    ```
+
+    **Solution:**
+    ```bash
+    # Install Nmap
+    sudo apt-get install nmap
+
+    # Verify installation
+    which nmap
+    nmap --version
+    ```
+
+    <Note>
+      Nmap is required for all network scanning operations. AutoPentestX cannot function without it.
+    </Note>
+  </Accordion>
+
+  <Accordion title="Nikto Fails to Run" icon="globe">
+    **Error Message:**
+    ```bash
+    FileNotFoundError: [Errno 2] No such file or directory: 'nikto'
+    nikto: command not found
+    ```
+
+    **Solution:**
+    ```bash
+    # Install Nikto
+    sudo apt-get install nikto
+
+    # Alternative: Install from GitHub
+    git clone https://github.com/sullo/nikto.git
+    cd nikto/program
+    ./nikto.pl -h
+    ```
+
+    **Workaround:**
+    ```bash
+    # Skip web scanning if Nikto is not available
+    python3 main.py -t 192.168.1.100 --skip-web
+    ```
+  </Accordion>
+
+  <Accordion title="SQLMap Issues" icon="shield-halved">
+    **Error Message:**
+    ```bash
+    sqlmap: command not found
+    ```
+
+    **Solution:**
+    ```bash
+    # Install SQLMap
+    sudo apt-get install sqlmap
+
+    # Or download latest version
+    git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git
+    ```
+
+    **Skip SQL injection testing:**
+    ```bash
+    python3 main.py -t 192.168.1.100 --skip-web
+    ```
+  </Accordion>
+
+  <Accordion title="Metasploit Not Installed" icon="terminal">
+    **Warning Message:**
+    ```bash
+    [!] Metasploit Framework not found
+    [!] Exploitation features will be limited
+    ```
+
+    **Solution:**
+    <Steps>
+      <Step title="Install Metasploit">
+        ```bash
+        curl https://raw.githubusercontent.com/rapid7/metasploit-omnibus/master/config/templates/metasploit-framework-wrappers/msfupdate.erb > msfinstall
+        chmod 755 msfinstall
+        sudo ./msfinstall
+        ```
+      </Step>
+      <Step title="Verify installation">
+        ```bash
+        msfconsole --version
+        ```
+      </Step>
+    </Steps>
+
+    **Workaround:**
+    ```bash
+    # Skip exploitation phase entirely
+    python3 main.py -t 192.168.1.100 --skip-exploit
+    ```
+
+    <Note>
+      Metasploit is optional. AutoPentestX can perform reconnaissance and vulnerability scanning without it.
+    </Note>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Performance Issues
+
+<Accordion title="Scan Takes Too Long" icon="hourglass">
+  **Symptoms:** Scan runs for 30+ minutes
+
+  **Solutions:**
+  <CodeGroup>
+  ```bash Skip Web Scanning
+  # Nikto and SQLMap are time-intensive
+  python3 main.py -t 192.168.1.100 --skip-web
+  # Reduces scan time by 10-15 minutes
+  ```
+
+  ```bash Skip Exploitation
+  # Skip exploit matching and RC script generation
+  python3 main.py -t 192.168.1.100 --skip-exploit
+  # Saves 5-10 minutes
+  ```
+
+  ```bash Fast Recon Only
+  # Minimal scan - ports and services only
+  python3 main.py -t 192.168.1.100 --skip-web --skip-exploit
+  # Completes in 5-10 minutes
+  ```
+  </CodeGroup>
+
+  <Tip>
+    Use `--skip-web --skip-exploit` for quick reconnaissance, then run a full scan later if needed.
+  </Tip>
+</Accordion>
+
+---
+
+## Getting Help
+
+If your issue is not listed here:
+
+1. **Check the logs**: `ls -lh logs/` and examine recent log files
+2. **Review scan database**: `sqlite3 database/autopentestx.db "SELECT * FROM scans ORDER BY id DESC LIMIT 5;"`
+3. **Test components individually**: Run Nmap, Nikto, and SQLMap manually to isolate the issue
+4. **Consult other troubleshooting pages**:
+   - [Permission Issues](/troubleshooting/permissions)
+   - [Dependency Problems](/troubleshooting/dependencies)
+
+<Card title="Still Need Help?" icon="question" href="https://github.com/AutoPentestX/AutoPentestX/issues">
+  Open an issue on GitHub with your error logs and system information
+</Card>
