@@ -1,0 +1,121 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "AutoPentestX",
+  "projectDescription": "Automated penetration testing and vulnerability assessment toolkit with comprehensive reporting",
+  "theme": "aspen",
+  "primaryColor": "#94cb04",
+  "lightColor": "#545454",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/overview",
+              "concepts/workflow",
+              "concepts/safe-mode",
+              "concepts/legal-ethical"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/basic-scan",
+              "guides/advanced-scanning",
+              "guides/web-vulnerabilities",
+              "guides/exploitation",
+              "guides/reports"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/settings",
+              "configuration/scan-options",
+              "configuration/database"
+            ]
+          },
+          {
+            "group": "Troubleshooting",
+            "pages": [
+              "troubleshooting/common-issues",
+              "troubleshooting/permissions",
+              "troubleshooting/dependencies"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Command Reference",
+        "groups": [
+          {
+            "group": "CLI Commands",
+            "pages": [
+              "commands/overview",
+              "commands/target",
+              "commands/options",
+              "commands/examples"
+            ]
+          },
+          {
+            "group": "Modules",
+            "pages": [
+              "modules/scanner",
+              "modules/vulnerability-scanner",
+              "modules/cve-lookup",
+              "modules/risk-engine",
+              "modules/exploit-engine",
+              "modules/pdf-report",
+              "modules/database"
+            ]
+          },
+          {
+            "group": "Output & Reports",
+            "pages": [
+              "output/pdf-reports",
+              "output/database-queries",
+              "output/logs",
+              "output/exploit-scripts"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Automated network scanning with Nmap",
+    "Operating system and service detection",
+    "Web vulnerability scanning (Nikto, SQLMap)",
+    "CVE database lookup and matching",
+    "Risk assessment and scoring engine",
+    "Safe exploitation simulation",
+    "Professional PDF report generation",
+    "SQLite database for scan history"
+  ],
+  "publicApiSurface": [
+    "main.py -t <target>",
+    "autopentestx.sh <target>",
+    "--skip-web",
+    "--skip-exploit",
+    "--no-safe-mode",
+    "-n <tester-name>",
+    "Scanner class",
+    "VulnerabilityScanner class",
+    "CVELookup class",
+    "RiskEngine class",
+    "ExploitEngine class",
+    "PDFReportGenerator class",
+    "Database class"
+  ]
+}
